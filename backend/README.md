@@ -12,7 +12,8 @@ API local em FastAPI para autenticação, permissões e entrega de dados mockado
 
 ## Requisitos
 
-- Python 3.11+
+- Python 3.11+.
+- Python 3.14 também é suportado com as versões atuais do `fastapi` e `pydantic` usadas aqui.
 - Firebird driver opcional para a fase real
 
 ## Instalação
@@ -23,6 +24,7 @@ API local em FastAPI para autenticação, permissões e entrega de dados mockado
 cd backend
 python -m venv .venv
 .venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
 ```
 
@@ -38,6 +40,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 cd backend
 python -m venv .venv
 .venv\Scripts\activate
+python -m pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
 ```
 
