@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -30,6 +31,13 @@ class Settings(BaseSettings):
     @property
     def signing_secret(self) -> str:
         return self.secret_key or self.jwt_secret
+
+    def resolve_path(self, relative_path: str) -> str:
+        base_dir = Path(__file__).resolve().parents[1]
+        candidate = Path(relative_path)
+        if candidate.is_absolute():
+            return str(candidate)
+        return str((base_dir / candidate).resolve())
 
 
 @lru_cache

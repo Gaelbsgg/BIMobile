@@ -135,4 +135,4 @@ class BaseRegistry:
 
 def get_base_registry() -> BaseRegistry:
     settings = get_settings()
-    return BaseRegistry(settings.bases_config_path)
+    return BaseRegistry(settings.resolve_path(settings.bases_config_path))

@@ -13,15 +13,38 @@ API local em FastAPI para autenticação, permissões e entrega de dados mockado
 ## Requisitos
 
 - Python 3.11+
-- Firebird driver opcional para a fase mock
+- Firebird driver opcional para a fase real
 
 ## Instalação
+
+### Windows
+
+```powershell
+cd backend
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+Se o PowerShell bloquear a ativação do ambiente virtual:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+### Alternativa com CMD
 
 ```bash
 cd backend
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
+```
+
+Se for conectar ao Firebird real depois, instale o driver opcional:
+
+```powershell
+pip install fdb
 ```
 
 ## Configuração
@@ -35,6 +58,14 @@ pip install -r requirements.txt
 3. Edite os arquivos em `data/` para cadastrar bases e permissões locais.
 
 ## Execução local
+
+### Opção 1
+
+```powershell
+python run.py
+```
+
+### Opção 2
 
 ```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000

@@ -172,4 +172,4 @@ class PermissionsService:
 
 def get_permissions_service() -> PermissionsService:
     settings = get_settings()
-    return PermissionsService(settings.permissions_config_path)
+    return PermissionsService(settings.resolve_path(settings.permissions_config_path))
