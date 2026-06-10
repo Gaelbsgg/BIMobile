@@ -39,7 +39,7 @@ export function Sidebar() {
       <div className="mt-auto border-t border-outline-variant pt-4">
         <a className="flex items-center gap-3 rounded-lg px-4 py-3 text-on-surface-variant transition-colors hover:bg-surface-container-high" href="#">
           <MaterialSymbol icon="help" className="text-[20px]" />
-          <span className="text-label-md">Help Center</span>
+          <span className="text-label-md">{dashboardCopy.helpLabel}</span>
         </a>
       </div>
     </aside>
