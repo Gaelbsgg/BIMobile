@@ -107,6 +107,13 @@ VITE_API_URL=http://localhost:8000
 VITE_USE_MOCKS=true
 ```
 
+### Rotas da interface
+
+- `/login-empresa` etapa 1, validação do token da empresa
+- `/login-usuario` etapa 2, login do usuário
+- `/dashboard` visão principal
+- `/dashboard/vendas`, `/dashboard/financeiro`, `/dashboard/estoque`, `/dashboard/funcionarios`, `/dashboard/configuracoes`
+
 ### Instalação local
 
 ```bash
@@ -149,4 +156,3 @@ Fluxo sugerido:
 2. Implementar os adaptadores reais do Firebird 2.5
 3. Registrar SQLs reais no `sql_registry`
 4. Evoluir o controle fino de permissões por módulo e KPI
-

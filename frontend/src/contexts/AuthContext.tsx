@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { AuthCompany, AuthUser } from '../types/auth'
 import { requestCompanyChallenge, loginUser, loadMe } from '../services/api'
@@ -30,7 +31,7 @@ function readInitialState(): AuthState {
   }
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(() => readInitialState())
   const [loading, setLoading] = useState(false)
 
