@@ -1,0 +1,30 @@
+{
+  "bases": [
+    {
+      "id": "base-demo-matriz",
+      "nome_configuracao": "Matriz",
+      "token_empresa": "001",
+      "servidor": "127.0.0.1",
+      "porta": 3050,
+      "caminho_fdb": "C:/firebird/dados/matriz.fdb",
+      "usuario_firebird": "SYSDBA",
+      "senha_firebird": "masterkey",
+      "ativo": true,
+      "empresa_nome": "Empresa Demo Matriz",
+      "empresa_cnpj": "00.000.000/0001-00"
+    },
+    {
+      "id": "base-demo-filial",
+      "nome_configuracao": "Filial",
+      "token_empresa": "001",
+      "servidor": "127.0.0.1",
+      "porta": 3050,
+      "caminho_fdb": "C:/firebird/dados/filial.fdb",
+      "usuario_firebird": "SYSDBA",
+      "senha_firebird": "masterkey",
+      "ativo": true,
+      "empresa_nome": "Empresa Demo Matriz",
+      "empresa_cnpj": "00.000.000/0001-00"
+    }
+  ]
+}
