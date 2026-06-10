@@ -1,0 +1,45 @@
+{
+  "companies": [
+    {
+      "id": "demo-company",
+      "token": "EMP-001",
+      "name": "Empresa Demo",
+      "status": "active",
+      "bases": [
+        {
+          "id": "base-1",
+          "name": "Matriz",
+          "alias": "matriz",
+          "path": "C:/dados/matriz.fdb",
+          "host": "127.0.0.1",
+          "port": 3050,
+          "username": "sysdba",
+          "charset": "UTF8",
+          "status": "mock"
+        }
+      ],
+      "users": [
+        {
+          "id": "user-admin",
+          "name": "Administrador",
+          "username": "admin",
+          "password_hash": "sha256-hash-placeholder",
+          "roles": ["admin"],
+          "permissions": {
+            "modules": ["overview", "vendas", "financeiro", "estoque", "funcionarios", "configuracoes"],
+            "kpis": ["vendas", "pedidos", "margem", "tickets", "estoque", "funcionarios"]
+          }
+        }
+      ]
+    }
+  ],
+  "sql_registry": [
+    {
+      "id": "overview-kpis",
+      "module": "overview",
+      "description": "KPIs consolidados do dashboard",
+      "dialect": "firebird-2.5",
+      "status": "mock"
+    }
+  ]
+}
