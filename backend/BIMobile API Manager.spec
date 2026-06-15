@@ -1,12 +1,19 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_all
+
+datas = [('data', 'data'), ('app', 'app'), ('C:\\Users\\gabriel.brito\\AppData\\Local\\Python\\pythoncore-3.14-64\\tcl\\tcl8.6', 'tcl\\tcl8.6'), ('C:\\Users\\gabriel.brito\\AppData\\Local\\Python\\pythoncore-3.14-64\\tcl\\tk8.6', 'tcl\\tk8.6')]
+binaries = [('C:\\Users\\gabriel.brito\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\_tkinter.pyd', '.'), ('C:\\Users\\gabriel.brito\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\tcl86t.dll', '.'), ('C:\\Users\\gabriel.brito\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\tk86t.dll', '.')]
+hiddenimports = []
+tmp_ret = collect_all('tkinter')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
     ['launcher\\desktop_launcher.py'],
     pathex=[],
-    binaries=[],
-    datas=[('data', 'data'), ('app', 'app')],
-    hiddenimports=[],
+    binaries=binaries,
+    datas=datas,
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
