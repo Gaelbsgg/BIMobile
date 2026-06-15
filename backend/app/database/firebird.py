@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
-from typing import Any, Iterator
+from typing import Any
 
 from app.config import get_settings
 
@@ -32,7 +31,7 @@ def _load_driver():
 def get_connection(base_config: dict[str, Any]):
     driver = _load_driver()
     if driver is None:
-        raise RuntimeError("Driver Firebird não instalado. TODO: instalar fdb/firebird-driver para conexão real.")
+        raise RuntimeError("Driver Firebird não instalado. A API continuará em modo mock.")
 
     servidor = base_config.get("servidor") or base_config.get("host") or "127.0.0.1"
     porta = int(base_config.get("porta") or base_config.get("port") or 3050)
@@ -63,7 +62,7 @@ def test_connection(base_config: dict[str, Any]) -> dict[str, Any]:
         return {
             "ok": True,
             "mode": "mock",
-            "message": "Driver Firebird não instalado. Conexão simulada com sucesso.",
+            "message": "Driver Firebird não instalado. A API continuará em modo mock.",
             "base_id": base_config.get("id"),
         }
 
