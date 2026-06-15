@@ -19,7 +19,6 @@ from launcher.config_store import ConfigStore  # noqa: E402
 BG = "#030712"
 PANEL = "#09111e"
 PANEL_ALT = "#0c1525"
-BORDER = "#1f2a3a"
 TEXT = "#e5eefb"
 MUTED = "#8f9bb0"
 ACCENT = "#0ea5e9"
@@ -62,10 +61,10 @@ class BaseFormDialog(Toplevel):
         self.apelido_var = StringVar(value=str(self.base.get("apelido", "")))
         self.caminho_base_var = StringVar(value=str(self.base.get("caminho_base", "")))
         self.nome_arquivo_var = StringVar(value=str(self.base.get("nome_arquivo", "")))
+        self.servidor_var = StringVar(value=str(self.base.get("servidor", "localhost")))
         self.login_var = StringVar(value=str(self.base.get("usuario_firebird", "SYSDBA")))
         self.senha_var = StringVar(value=str(self.base.get("senha_firebird", "masterkey")))
         self.porta_var = StringVar(value=str(self.base.get("porta", 3050)))
-        self.servidor_var = StringVar(value=str(self.base.get("servidor", "localhost")))
         self.linux_var = BooleanVar(value=bool(self.base.get("servidor_linux", False)))
         self.ativo_var = BooleanVar(value=bool(self.base.get("ativo", True)))
         self.show_password_var = BooleanVar(value=False)
@@ -74,11 +73,17 @@ class BaseFormDialog(Toplevel):
         self.protocol("WM_DELETE_WINDOW", self._close)
         self.after(50, self.apelido_entry.focus_set)
 
-    def _field(self, parent: tk.Widget, label: str, widget) -> tk.Frame:
+    def _field(self, parent: tk.Widget, label: str, widget_factory) -> tk.Frame:
         wrapper = tk.Frame(parent, bg=BG)
         tk.Label(wrapper, text=label, bg=BG, fg=TEXT, font=("Segoe UI", 9, "bold")).pack(anchor="w", pady=(0, 4))
+        widget = widget_factory(wrapper)
         widget.pack(fill="x")
         return wrapper
+
+    def _entry(self, parent: tk.Widget, attr_name: str, variable: StringVar) -> ttk.Entry:
+        entry = ttk.Entry(parent, textvariable=variable)
+        setattr(self, attr_name, entry)
+        return entry
 
     def _password_widget(self, parent: tk.Widget) -> tk.Frame:
         wrapper = tk.Frame(parent, bg=BG)
@@ -112,18 +117,22 @@ class BaseFormDialog(Toplevel):
         form.columnconfigure(0, weight=1)
         form.columnconfigure(1, weight=1)
 
-        self.apelido_entry = ttk.Entry(form, textvariable=self.apelido_var)
-        self._field(form, "Apelido", self.apelido_entry).grid(row=0, column=0, columnspan=2, sticky="ew", pady=8)
+        self._field(form, "Apelido", lambda parent: self._entry(parent, "apelido_entry", self.apelido_var)).grid(
+            row=0, column=0, columnspan=2, sticky="ew", pady=8
+        )
 
-        self.caminho_entry = ttk.Entry(form, textvariable=self.caminho_base_var)
-        self._field(form, "Caminho do banco de dados", self.caminho_entry).grid(row=1, column=0, columnspan=2, sticky="ew", pady=8)
+        self._field(
+            form,
+            "Local do banco de dados",
+            lambda parent: self._entry(parent, "caminho_entry", self.caminho_base_var),
+        ).grid(row=1, column=0, columnspan=2, sticky="ew", pady=8)
 
         left_pair = tk.Frame(form, bg=BG)
         right_pair = tk.Frame(form, bg=BG)
         left_pair.columnconfigure(0, weight=1)
         right_pair.columnconfigure(0, weight=1)
-        self._field(left_pair, "Nome do banco de dados", ttk.Entry(left_pair, textvariable=self.nome_arquivo_var)).pack(fill="x")
-        self._field(right_pair, "Login", ttk.Entry(right_pair, textvariable=self.login_var)).pack(fill="x")
+        self._field(left_pair, "Nome do banco de dados", lambda parent: ttk.Entry(parent, textvariable=self.nome_arquivo_var)).pack(fill="x")
+        self._field(right_pair, "Nome do servidor", lambda parent: ttk.Entry(parent, textvariable=self.servidor_var)).pack(fill="x")
         left_pair.grid(row=2, column=0, sticky="ew", padx=(0, 8), pady=8)
         right_pair.grid(row=2, column=1, sticky="ew", padx=(8, 0), pady=8)
 
@@ -131,15 +140,15 @@ class BaseFormDialog(Toplevel):
         right_pair_2 = tk.Frame(form, bg=BG)
         left_pair_2.columnconfigure(0, weight=1)
         right_pair_2.columnconfigure(0, weight=1)
-        self._field(left_pair_2, "Porta", ttk.Entry(left_pair_2, textvariable=self.porta_var)).pack(fill="x")
+        self._field(left_pair_2, "Login", lambda parent: ttk.Entry(parent, textvariable=self.login_var)).pack(fill="x")
         self._password_widget(right_pair_2).pack(fill="x")
         left_pair_2.grid(row=3, column=0, sticky="ew", padx=(0, 8), pady=8)
         right_pair_2.grid(row=3, column=1, sticky="ew", padx=(8, 0), pady=8)
 
-        server_row = tk.Frame(form, bg=BG)
-        server_row.grid(row=4, column=0, columnspan=2, sticky="ew", pady=8)
-        server_row.columnconfigure(0, weight=1)
-        self._field(server_row, "IP Servidor / Portal", ttk.Entry(server_row, textvariable=self.servidor_var)).pack(fill="x")
+        footer_row = tk.Frame(form, bg=BG)
+        footer_row.grid(row=4, column=0, columnspan=2, sticky="ew", pady=8)
+        footer_row.columnconfigure(0, weight=1)
+        self._field(footer_row, "Porta", lambda parent: ttk.Entry(parent, textvariable=self.porta_var)).pack(fill="x")
 
         options = tk.Frame(form, bg=BG)
         options.grid(row=5, column=0, columnspan=2, sticky="w", pady=(18, 0))
@@ -190,7 +199,7 @@ class BaseFormDialog(Toplevel):
     def _save(self) -> None:
         payload = self._build_payload()
         if not payload["apelido"] or not payload["caminho_base"] or not payload["nome_arquivo"]:
-            messagebox.showwarning("Cadastro de Base", "Preencha Apelido, Caminho do banco e Nome do banco.", parent=self)
+            messagebox.showwarning("Cadastro de Base", "Preencha Apelido, Local do banco e Nome do banco.", parent=self)
             return
         self.result = FormResult(data=payload)
         if callable(self.on_save):
@@ -214,14 +223,11 @@ class LauncherApp(Tk):
         self.selected_base_id: str | None = None
         self.select_on_start_var = BooleanVar(value=False)
         self.api_status_var = StringVar(value="API parada")
-        self.connection_status_var = StringVar(value="Banco não testado")
-        self.selection_status_var = StringVar(value="Nenhuma base selecionada")
 
         self._configure_styles()
         self._build_ui()
         self.refresh_bases()
         self.after(300, self._ensure_api_started)
-        self.after(5000, self._auto_refresh_tick)
 
     def _configure_styles(self) -> None:
         style = ttk.Style(self)
@@ -259,20 +265,6 @@ class LauncherApp(Tk):
 
         tk.Label(left, text="BIMobile API", bg=PANEL, fg=TEXT, font=("Segoe UI", 16, "bold")).pack()
 
-        status_box = tk.Frame(left, bg=PANEL_ALT, highlightbackground=BORDER, highlightthickness=1)
-        status_box.pack(fill="x", padx=16, pady=10)
-        for label_var, color in (
-            (self.api_status_var, ACCENT),
-            (self.connection_status_var, SUCCESS),
-            (self.selection_status_var, MUTED),
-        ):
-            row = tk.Frame(status_box, bg=PANEL_ALT)
-            row.pack(fill="x", padx=12, pady=8)
-            dot = tk.Canvas(row, width=10, height=10, bg=PANEL_ALT, highlightthickness=0)
-            dot.pack(side="left")
-            dot.create_oval(1, 1, 9, 9, fill=color, outline=color)
-            tk.Label(row, textvariable=label_var, bg=PANEL_ALT, fg=TEXT, font=("Segoe UI", 9, "bold"), wraplength=150, justify="left").pack(side="left", padx=8)
-
         self.clock_label = tk.Label(left, text="", bg=PANEL, fg=MUTED, font=("Segoe UI", 9))
         self.clock_label.pack(side="bottom", pady=18)
         self._tick_clock()
@@ -284,7 +276,7 @@ class LauncherApp(Tk):
         header = tk.Frame(center, bg=BG)
         header.pack(fill="x", pady=(6, 14))
         tk.Label(header, text="Bases Cadastradas", bg=BG, fg=TEXT, font=("Segoe UI", 18, "bold")).pack(anchor="w")
-        tk.Label(header, text="Selecione uma base para editar, testar conexão ou definir como padrão.", bg=BG, fg=MUTED, font=("Segoe UI", 10)).pack(anchor="w", pady=(4, 0))
+        tk.Label(header, text="Selecione uma base para editar.", bg=BG, fg=MUTED, font=("Segoe UI", 10)).pack(anchor="w", pady=(4, 0))
 
         list_frame = tk.Frame(center, bg=PANEL)
         list_frame.pack(fill="both", expand=True)
@@ -318,13 +310,12 @@ class LauncherApp(Tk):
         panel.pack_propagate(False)
 
         tk.Label(panel, text="Ações", bg=BG, fg=TEXT, font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(8, 12))
-        for label, callback in (("Selecionar", self.select_base), ("Fechar", self.destroy)):
-            ttk.Button(panel, text=label, command=callback).pack(fill="x", pady=7)
+        ttk.Button(panel, text="Selecionar", command=self.select_base).pack(fill="x", pady=7)
+        ttk.Button(panel, text="Fechar", command=self.destroy).pack(fill="x", pady=7)
 
         hint = tk.Frame(panel, bg=PANEL)
         hint.pack(fill="x", pady=(18, 0))
-        tk.Label(hint, text="Status", bg=PANEL, fg=TEXT, font=("Segoe UI", 10, "bold")).pack(anchor="w", padx=12, pady=(12, 4))
-        tk.Label(hint, text="API inicia automaticamente", bg=PANEL, fg=MUTED, font=("Segoe UI", 9)).pack(anchor="w", padx=12, pady=(2, 12))
+        tk.Label(hint, text="API inicia automaticamente", bg=PANEL, fg=MUTED, font=("Segoe UI", 9)).pack(anchor="w", padx=12, pady=(12, 12))
 
     def _tick_clock(self) -> None:
         from datetime import datetime
@@ -334,9 +325,6 @@ class LauncherApp(Tk):
 
     def _toggle_select_on_start(self) -> None:
         self.store.set_select_on_start(bool(self.select_on_start_var.get()))
-
-    def _auto_refresh_tick(self) -> None:
-        self.after(5000, self._auto_refresh_tick)
 
     def _ensure_api_started(self) -> None:
         def worker() -> None:
@@ -375,27 +363,9 @@ class LauncherApp(Tk):
             self.tree.selection_set(self.selected_base_id)
             self.tree.focus(self.selected_base_id)
             self.tree.see(self.selected_base_id)
-        self._refresh_selection_label()
-
-    def _refresh_selection_label(self) -> None:
-        base = self.get_selected_base()
-        if base is None:
-            self.selection_status_var.set("Nenhuma base selecionada")
-            self.connection_status_var.set("Banco não testado")
-            return
-        self.selection_status_var.set(str(base.get("descricao", "")))
-        self._sync_connection_status(base)
-
-    def _sync_connection_status(self, base: dict[str, object]) -> None:
-        result = test_connection(base)
-        if result.get("ok"):
-            self.connection_status_var.set("Banco conectado" if result.get("mode") != "mock" else "Banco em modo mock")
-        else:
-            self.connection_status_var.set("Falha de conexão")
 
     def _on_tree_select(self, _event=None) -> None:
         self.selected_base_id = self.get_current_tree_selection()
-        self._refresh_selection_label()
 
     def get_current_tree_selection(self) -> str | None:
         selection = self.tree.selection()
@@ -447,7 +417,6 @@ class LauncherApp(Tk):
         self.tree.selection_set(self.selected_base_id)
         self.tree.focus(self.selected_base_id)
         self.tree.see(self.selected_base_id)
-        self._refresh_selection_label()
 
     def _update_api_status(self) -> None:
         self.api_status_var.set("API rodando em http://localhost:8000" if is_api_running() else "API parada")
