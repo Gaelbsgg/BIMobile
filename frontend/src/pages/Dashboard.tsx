@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { Sidebar } from '../components/Sidebar'
 import { Header } from '../components/Header'
@@ -7,7 +7,9 @@ import { KpiCard } from '../components/KpiCard'
 import { ChartCard } from '../components/ChartCard'
 import { MaterialSymbol } from '../components/MaterialSymbol'
 import { useAuth } from '../contexts/AuthContext'
-import { loadDashboard } from '../services/api'
+import { loadDashboard, loadOverviewResumo } from '../services/api'
+import { mockOverviewResumo } from '../services/mockData'
+import { DashboardOverviewResumo } from '../types/dashboard'
 import { dashboardCopy } from '../content/stitchContent'
 
 function FakeAreaBars() {
@@ -28,7 +30,247 @@ function FakeAreaBars() {
   )
 }
 
-function DashboardModule({ moduleName }: { moduleName: string }) {
+type OverviewTone = 'positive' | 'info' | 'negative'
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(value)
+}
+
+function formatInteger(value: number) {
+  return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value)
+}
+
+function OverviewKpiCard({
+  title,
+  value,
+  description,
+  icon,
+  tone = 'info',
+}: {
+  title: string
+  value: string
+  description: string
+  icon: string
+  tone?: OverviewTone
+}) {
+  const toneStyles =
+    tone === 'positive'
+      ? {
+          card: 'border-emerald-400/20 bg-emerald-500/10',
+          icon: 'bg-emerald-500/15 text-emerald-300',
+          title: 'text-emerald-200',
+          value: 'text-emerald-100',
+        }
+      : tone === 'negative'
+        ? {
+            card: 'border-rose-400/20 bg-rose-500/10',
+            icon: 'bg-rose-500/15 text-rose-300',
+            title: 'text-rose-200',
+            value: 'text-rose-50',
+          }
+        : {
+            card: 'border-sky-400/20 bg-sky-500/10',
+            icon: 'bg-sky-500/15 text-sky-300',
+            title: 'text-sky-200',
+            value: 'text-slate-50',
+          }
+
+  return (
+    <article className={`rounded-2xl border p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)] backdrop-blur ${toneStyles.card}`}>
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${toneStyles.icon}`}>
+          <MaterialSymbol icon={icon} className="text-[20px]" filled />
+        </div>
+      </div>
+      <p className={`text-[11px] font-semibold uppercase tracking-[0.24em] ${toneStyles.title}`}>{title}</p>
+      <p className={`mt-2 text-2xl font-extrabold tracking-tight ${toneStyles.value}`}>{value}</p>
+      <p className="mt-2 text-sm leading-5 text-slate-300">{description}</p>
+    </article>
+  )
+}
+
+function OverviewSection({
+  title,
+  subtitle,
+  columnsClass,
+  children,
+}: {
+  title: string
+  subtitle: string
+  columnsClass: string
+  children: ReactNode
+}) {
+  return (
+    <section className="space-y-4">
+      <div className="space-y-1">
+        <h2 className="text-sm font-extrabold uppercase tracking-[0.28em] text-slate-100">{title}</h2>
+        <p className="text-sm text-slate-400">{subtitle}</p>
+      </div>
+      <div className={`grid grid-cols-1 gap-4 md:grid-cols-2 ${columnsClass}`}>{children}</div>
+    </section>
+  )
+}
+
+function OverviewModule() {
+  const { accessToken } = useAuth()
+  const [overview, setOverview] = useState<DashboardOverviewResumo>(mockOverviewResumo)
+
+  useEffect(() => {
+    if (!accessToken) return
+    void loadOverviewResumo(accessToken).then(setOverview)
+  }, [accessToken])
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-[32px] border border-white/10 bg-[#07111f] px-5 py-6 shadow-[0_40px_120px_rgba(0,0,0,0.4)] lg:px-6">
+        <FiltersBar />
+
+        <div className="mt-6 space-y-8">
+          <OverviewSection title="KPIs CRÍTICOS" subtitle="Leitura rápida do negócio em segundos" columnsClass="xl:grid-cols-4">
+            <OverviewKpiCard
+              title="TOTAL GERAL DE VENDAS (R$)"
+              value={formatCurrency(overview.total_geral_vendas)}
+              description="Valor total vendido no período selecionado."
+              icon="payments"
+              tone="positive"
+            />
+            <OverviewKpiCard
+              title="LUCRO BRUTO (R$)"
+              value={formatCurrency(overview.lucro_bruto)}
+              description="Diferença entre o valor vendido e o custo dos produtos ou serviços."
+              icon="trending_up"
+              tone="positive"
+            />
+            <OverviewKpiCard
+              title="TICKET MÉDIO"
+              value={formatCurrency(overview.ticket_medio)}
+              description="Valor médio de cada venda realizada no período."
+              icon="sell"
+              tone="info"
+            />
+            <OverviewKpiCard
+              title="PREVISTO A RECEBER (MÊS)"
+              value={formatCurrency(overview.previsto_receber_mes)}
+              description="Valor que a empresa ainda tem para receber dos clientes."
+              icon="account_balance_wallet"
+              tone="positive"
+            />
+            <OverviewKpiCard
+              title="O.S EM SERVIÇO"
+              value={formatInteger(overview.os_em_servico)}
+              description="Ordens de Serviço que ainda estão em andamento."
+              icon="construction"
+              tone="info"
+            />
+            <OverviewKpiCard
+              title="O.S ENCERRADAS"
+              value={formatInteger(overview.os_encerradas)}
+              description="Ordens de Serviço concluídas no período."
+              icon="task_alt"
+              tone="positive"
+            />
+            <OverviewKpiCard
+              title="O.S CANCELADAS"
+              value={formatInteger(overview.os_canceladas)}
+              description="Ordens de Serviço canceladas no período."
+              icon="cancel"
+              tone="negative"
+            />
+            <OverviewKpiCard
+              title="PREVISTO A PAGAR (MÊS)"
+              value={formatCurrency(overview.previsto_pagar_mes)}
+              description="Valor que a empresa ainda possui de compromissos financeiros a pagar."
+              icon="payments"
+              tone="negative"
+            />
+          </OverviewSection>
+
+          <OverviewSection title="OPERACIONAL" subtitle="Indicadores de execução e volume" columnsClass="xl:grid-cols-5">
+            <OverviewKpiCard
+              title="NÚMERO DE VENDAS"
+              value={formatInteger(overview.numero_vendas)}
+              description="Quantidade total de Ordens de Serviço registradas no período."
+              icon="point_of_sale"
+              tone="info"
+            />
+            <OverviewKpiCard
+              title="DEVOLUÇÕES"
+              value={formatInteger(overview.devolucoes)}
+              description="Quantidade de vendas devolvidas pelos clientes no período."
+              icon="keyboard_return"
+              tone="negative"
+            />
+            <OverviewKpiCard
+              title="QTD. PRODUTOS VENDIDOS"
+              value={formatNumber(overview.qtd_produtos_vendidos)}
+              description="Quantidade total de itens vendidos no período."
+              icon="inventory_2"
+              tone="info"
+            />
+            <OverviewKpiCard
+              title="ORÇAMENTOS"
+              value={formatInteger(overview.orcamentos)}
+              description="Quantidade de orçamentos registrados no período."
+              icon="description"
+              tone="info"
+            />
+            <OverviewKpiCard
+              title="AUTORIZAÇÕES NF"
+              value={formatInteger(overview.autorizacoes_nf)}
+              description="Quantidade de notas fiscais autorizadas no período."
+              icon="receipt_long"
+              tone="positive"
+            />
+          </OverviewSection>
+
+          <OverviewSection title="VALOR TOTAL DO ESTOQUE (R$)" subtitle="Indicadores" columnsClass="xl:grid-cols-5">
+            <OverviewKpiCard
+              title="VALOR TOTAL DO ESTOQUE (R$)"
+              value={formatCurrency(overview.valor_total_estoque)}
+              description="Valor de venda dos itens atualmente em estoque."
+              icon="inventory"
+              tone="info"
+            />
+            <OverviewKpiCard
+              title="CUSTO TOTAL DO ESTOQUE (R$)"
+              value={formatCurrency(overview.custo_total_estoque)}
+              description="Custo de aquisição dos itens atualmente em estoque."
+              icon="sell"
+              tone="info"
+            />
+            <OverviewKpiCard
+              title="QUANTIDADE TOTAL EM ESTOQUE"
+              value={formatNumber(overview.quantidade_total_estoque)}
+              description="Quantidade consolidada dos itens disponíveis."
+              icon="view_in_ar"
+              tone="info"
+            />
+            <OverviewKpiCard
+              title="ESTOQUE ABAIXO DO MÍNIMO"
+              value={formatInteger(overview.estoque_abaixo_minimo)}
+              description="Itens que exigem atenção imediata de reposição."
+              icon="warning"
+              tone="negative"
+            />
+            <OverviewKpiCard
+              title="ESTOQUE ACIMA DO MÁXIMO"
+              value={formatInteger(overview.estoque_acima_maximo)}
+              description="Itens com saldo acima do limite configurado."
+              icon="north"
+              tone="negative"
+            />
+          </OverviewSection>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function LegacyDashboardModule({ moduleName }: { moduleName: string }) {
   const { accessToken } = useAuth()
 
   useEffect(() => {
@@ -206,8 +448,8 @@ export function Dashboard() {
       <Sidebar />
       <Header />
 
-      <div className="min-h-screen px-gutter pb-12 pt-24 lg:ml-[256px]">
-        <DashboardModule moduleName={moduleName} />
+      <div className={`min-h-screen px-gutter pb-12 pt-24 lg:ml-[256px] ${moduleName === 'overview' ? 'bg-[#07111f] text-slate-100' : ''}`}>
+        {moduleName === 'overview' ? <OverviewModule /> : <LegacyDashboardModule moduleName={moduleName} />}
       </div>
     </main>
   )

@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { AuthCompany, AuthUser } from '../types/auth'
-import { DashboardPayload } from '../types/dashboard'
-import { mockCompany, mockDashboards, mockUsers } from './mockData'
+import { DashboardOverviewResumo, DashboardPayload } from '../types/dashboard'
+import { mockCompany, mockDashboards, mockOverviewResumo, mockUsers } from './mockData'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
@@ -94,5 +94,17 @@ export async function loadDashboard(moduleName: string, token: string): Promise<
       return data
     },
     async () => mockDashboards[moduleName] ?? mockDashboards.overview,
+  )
+}
+
+export async function loadOverviewResumo(token: string): Promise<DashboardOverviewResumo> {
+  return tryRequest(
+    async () => {
+      const { data } = await api.get<DashboardOverviewResumo>('/dashboard/overview/resumo', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      return data
+    },
+    async () => mockOverviewResumo,
   )
 }

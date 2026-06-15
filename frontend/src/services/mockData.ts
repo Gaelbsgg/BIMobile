@@ -1,5 +1,5 @@
 import { AuthCompany, AuthUser } from '../types/auth'
-import { DashboardPayload } from '../types/dashboard'
+import { DashboardOverviewResumo, DashboardPayload } from '../types/dashboard'
 
 export const mockCompany: AuthCompany = {
   id: 'demo-company',
@@ -40,6 +40,27 @@ export const mockUsers: Record<string, { password: string; user: AuthUser }> = {
       base_id: 'base-1',
     },
   },
+}
+
+export const mockOverviewResumo: DashboardOverviewResumo = {
+  total_geral_vendas: 164383.55,
+  lucro_bruto: 26762.39,
+  ticket_medio: 649.74,
+  previsto_receber_mes: 130594.3,
+  os_em_servico: 48,
+  os_encerradas: 165,
+  os_canceladas: 5,
+  previsto_pagar_mes: 166403.12,
+  numero_vendas: 253,
+  devolucoes: 0,
+  qtd_produtos_vendidos: 776.2,
+  orcamentos: 4,
+  autorizacoes_nf: 86,
+  valor_total_estoque: 14964919.49,
+  custo_total_estoque: 2487675.32,
+  quantidade_total_estoque: 102984.34,
+  estoque_abaixo_minimo: 2002,
+  estoque_acima_maximo: 6438,
 }
 
 const overview: DashboardPayload = {
