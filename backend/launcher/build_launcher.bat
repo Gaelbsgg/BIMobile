@@ -7,6 +7,9 @@ if exist ".venv\Scripts\activate.bat" (
   call ".venv\Scripts\activate.bat"
 )
 
+taskkill /F /IM "BIMobile API Manager.exe" >nul 2>&1
+taskkill /F /IM "BIMobile API Manager" >nul 2>&1
+
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 python -m pip install pyinstaller
