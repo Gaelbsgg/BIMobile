@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 import tkinter as tk
@@ -11,7 +12,7 @@ if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
 from app.database.firebird import test_connection  # noqa: E402
-from launcher.api_runner import is_api_running, open_docs, start_api, stop_api, test_health  # noqa: E402
+from launcher.api_runner import is_api_running, start_api  # noqa: E402
 from launcher.config_store import ConfigStore  # noqa: E402
 
 
@@ -23,8 +24,6 @@ TEXT = "#e5eefb"
 MUTED = "#8f9bb0"
 ACCENT = "#0ea5e9"
 SUCCESS = "#22c55e"
-WARNING = "#f59e0b"
-DANGER = "#ef4444"
 
 
 def format_port(value: str) -> int:
@@ -55,22 +54,21 @@ class BaseFormDialog(Toplevel):
 
         self.title("Cadastro de Base")
         self.configure(bg=BG)
-        self.geometry("700x560")
+        self.geometry("720x560")
         self.resizable(False, False)
         self.transient(master)
         self.grab_set()
 
         self.apelido_var = StringVar(value=str(self.base.get("apelido", "")))
         self.caminho_base_var = StringVar(value=str(self.base.get("caminho_base", "")))
-        self.servidor_var = StringVar(value=str(self.base.get("servidor", "localhost")))
         self.nome_arquivo_var = StringVar(value=str(self.base.get("nome_arquivo", "")))
-        self.usuario_var = StringVar(value=str(self.base.get("usuario_firebird", "SYSDBA")))
+        self.login_var = StringVar(value=str(self.base.get("usuario_firebird", "SYSDBA")))
         self.senha_var = StringVar(value=str(self.base.get("senha_firebird", "masterkey")))
         self.porta_var = StringVar(value=str(self.base.get("porta", 3050)))
-        self.protocolo_var = StringVar(value=str(self.base.get("protocolo", "TCP-IP")))
+        self.servidor_var = StringVar(value=str(self.base.get("servidor", "localhost")))
         self.linux_var = BooleanVar(value=bool(self.base.get("servidor_linux", False)))
         self.ativo_var = BooleanVar(value=bool(self.base.get("ativo", True)))
-        self.default_var = BooleanVar(value=bool(self.base.get("base_padrao", False)))
+        self.show_password_var = BooleanVar(value=False)
 
         self._build_ui()
         self.protocol("WM_DELETE_WINDOW", self._close)
@@ -82,18 +80,32 @@ class BaseFormDialog(Toplevel):
         widget.pack(fill="x")
         return wrapper
 
+    def _password_widget(self, parent: tk.Widget) -> tk.Frame:
+        wrapper = tk.Frame(parent, bg=BG)
+        tk.Label(wrapper, text="Senha", bg=BG, fg=TEXT, font=("Segoe UI", 9, "bold")).pack(anchor="w", pady=(0, 4))
+        row = tk.Frame(wrapper, bg=BG)
+        row.pack(fill="x")
+        self.senha_entry = ttk.Entry(row, textvariable=self.senha_var, show="•")
+        self.senha_entry.pack(side="left", fill="x", expand=True)
+        tk.Button(
+            row,
+            text="👁",
+            command=self._toggle_password,
+            bg=PANEL_ALT,
+            fg=TEXT,
+            activebackground=PANEL,
+            activeforeground=TEXT,
+            bd=0,
+            relief="flat",
+            width=3,
+        ).pack(side="left", padx=(8, 0))
+        return wrapper
+
     def _build_ui(self) -> None:
-        container = tk.Frame(self, bg=BG, highlightbackground=BORDER, highlightthickness=1)
+        container = tk.Frame(self, bg=BG)
         container.pack(fill="both", expand=True, padx=16, pady=16)
 
-        tk.Label(
-            container,
-            text="Gerenciador de Base de Dados - BIMobile API",
-            bg=BG,
-            fg=TEXT,
-            font=("Segoe UI", 16, "bold"),
-        ).pack(anchor="w", padx=18, pady=(18, 6))
-        tk.Label(container, text="Cadastro e edição da conexão Firebird", bg=BG, fg=MUTED, font=("Segoe UI", 10)).pack(anchor="w", padx=18, pady=(0, 14))
+        tk.Label(container, text="Gerenciador de Base de Dados - BIMobile API", bg=BG, fg=TEXT, font=("Segoe UI", 16, "bold")).pack(anchor="w", padx=18, pady=(18, 10))
 
         form = tk.Frame(container, bg=BG)
         form.pack(fill="both", expand=True, padx=18, pady=(0, 14))
@@ -104,19 +116,14 @@ class BaseFormDialog(Toplevel):
         self._field(form, "Apelido", self.apelido_entry).grid(row=0, column=0, columnspan=2, sticky="ew", pady=8)
 
         self.caminho_entry = ttk.Entry(form, textvariable=self.caminho_base_var)
-        self._field(form, "Caminho da base de dados no servidor", self.caminho_entry).grid(row=1, column=0, columnspan=2, sticky="ew", pady=8)
+        self._field(form, "Caminho do banco de dados", self.caminho_entry).grid(row=1, column=0, columnspan=2, sticky="ew", pady=8)
 
         left_pair = tk.Frame(form, bg=BG)
         right_pair = tk.Frame(form, bg=BG)
         left_pair.columnconfigure(0, weight=1)
         right_pair.columnconfigure(0, weight=1)
-
-        self.servidor_entry = ttk.Entry(left_pair, textvariable=self.servidor_var)
-        self._field(left_pair, "IP Servidor / Portal", self.servidor_entry).pack(fill="x")
-
-        self.arquivo_entry = ttk.Entry(right_pair, textvariable=self.nome_arquivo_var)
-        self._field(right_pair, "Nome do Arquivo B.D.", self.arquivo_entry).pack(fill="x")
-
+        self._field(left_pair, "Nome do banco de dados", ttk.Entry(left_pair, textvariable=self.nome_arquivo_var)).pack(fill="x")
+        self._field(right_pair, "Login", ttk.Entry(right_pair, textvariable=self.login_var)).pack(fill="x")
         left_pair.grid(row=2, column=0, sticky="ew", padx=(0, 8), pady=8)
         right_pair.grid(row=2, column=1, sticky="ew", padx=(8, 0), pady=8)
 
@@ -124,41 +131,30 @@ class BaseFormDialog(Toplevel):
         right_pair_2 = tk.Frame(form, bg=BG)
         left_pair_2.columnconfigure(0, weight=1)
         right_pair_2.columnconfigure(0, weight=1)
-
-        self.usuario_entry = ttk.Entry(left_pair_2, textvariable=self.usuario_var)
-        self._field(left_pair_2, "Usuário Firebird", self.usuario_entry).pack(fill="x")
-
-        self.senha_entry = ttk.Entry(right_pair_2, textvariable=self.senha_var, show="•")
-        self._field(right_pair_2, "Senha Firebird", self.senha_entry).pack(fill="x")
-
+        self._field(left_pair_2, "Porta", ttk.Entry(left_pair_2, textvariable=self.porta_var)).pack(fill="x")
+        self._password_widget(right_pair_2).pack(fill="x")
         left_pair_2.grid(row=3, column=0, sticky="ew", padx=(0, 8), pady=8)
         right_pair_2.grid(row=3, column=1, sticky="ew", padx=(8, 0), pady=8)
 
-        left_pair_3 = tk.Frame(form, bg=BG)
-        right_pair_3 = tk.Frame(form, bg=BG)
-        left_pair_3.columnconfigure(0, weight=1)
-        right_pair_3.columnconfigure(0, weight=1)
-
-        self.porta_entry = ttk.Entry(left_pair_3, textvariable=self.porta_var)
-        self._field(left_pair_3, "Porta", self.porta_entry).pack(fill="x")
-
-        self.protocolo_combo = ttk.Combobox(right_pair_3, textvariable=self.protocolo_var, values=["TCP-IP", "NetBeui"], state="readonly")
-        self._field(right_pair_3, "Protocolo Comunicação", self.protocolo_combo).pack(fill="x")
-
-        left_pair_3.grid(row=4, column=0, sticky="ew", padx=(0, 8), pady=8)
-        right_pair_3.grid(row=4, column=1, sticky="ew", padx=(8, 0), pady=8)
+        server_row = tk.Frame(form, bg=BG)
+        server_row.grid(row=4, column=0, columnspan=2, sticky="ew", pady=8)
+        server_row.columnconfigure(0, weight=1)
+        self._field(server_row, "IP Servidor / Portal", ttk.Entry(server_row, textvariable=self.servidor_var)).pack(fill="x")
 
         options = tk.Frame(form, bg=BG)
         options.grid(row=5, column=0, columnspan=2, sticky="w", pady=(18, 0))
         ttk.Checkbutton(options, text="Servidor Linux", variable=self.linux_var).pack(side="left", padx=(0, 20))
-        ttk.Checkbutton(options, text="Ativo", variable=self.ativo_var).pack(side="left", padx=(0, 20))
-        ttk.Checkbutton(options, text="Base Padrão", variable=self.default_var).pack(side="left")
+        ttk.Checkbutton(options, text="Ativo", variable=self.ativo_var).pack(side="left")
 
         buttons = tk.Frame(container, bg=BG)
         buttons.pack(fill="x", padx=18, pady=(0, 18))
         ttk.Button(buttons, text="Testar Conexão", command=self._test_connection).pack(side="left")
         ttk.Button(buttons, text="Salvar", command=self._save).pack(side="right", padx=(10, 0))
         ttk.Button(buttons, text="Cancelar", command=self._close).pack(side="right")
+
+    def _toggle_password(self) -> None:
+        self.show_password_var.set(not self.show_password_var.get())
+        self.senha_entry.configure(show="" if self.show_password_var.get() else "•")
 
     def _build_payload(self) -> dict[str, object]:
         apelido = self.apelido_var.get().strip()
@@ -173,12 +169,12 @@ class BaseFormDialog(Toplevel):
             "caminho_base": caminho_base,
             "nome_arquivo": nome_arquivo,
             "caminho_fdb": build_fdb_path(caminho_base, nome_arquivo),
-            "usuario_firebird": self.usuario_var.get().strip() or "SYSDBA",
-            "senha_firebird": self.senha_var.get(),
-            "protocolo": self.protocolo_var.get(),
+            "usuario_firebird": self.login_var.get().strip() or "SYSDBA",
+            "senha_firebird": self.senha_var.get() or "masterkey",
+            "protocolo": self.base.get("protocolo", "TCP-IP"),
             "servidor_linux": bool(self.linux_var.get()),
             "ativo": bool(self.ativo_var.get()),
-            "base_padrao": bool(self.default_var.get()),
+            "base_padrao": bool(self.base.get("base_padrao", False)),
             "token_empresa": self.base.get("token_empresa", ""),
         }
 
@@ -194,7 +190,7 @@ class BaseFormDialog(Toplevel):
     def _save(self) -> None:
         payload = self._build_payload()
         if not payload["apelido"] or not payload["caminho_base"] or not payload["nome_arquivo"]:
-            messagebox.showwarning("Cadastro de Base", "Preencha Apelido, Caminho da base e Nome do arquivo.", parent=self)
+            messagebox.showwarning("Cadastro de Base", "Preencha Apelido, Caminho do banco e Nome do banco.", parent=self)
             return
         self.result = FormResult(data=payload)
         if callable(self.on_save):
@@ -217,7 +213,6 @@ class LauncherApp(Tk):
         self.bases: list[dict[str, object]] = []
         self.selected_base_id: str | None = None
         self.select_on_start_var = BooleanVar(value=False)
-        self.auto_refresh_var = BooleanVar(value=False)
         self.api_status_var = StringVar(value="API parada")
         self.connection_status_var = StringVar(value="Banco não testado")
         self.selection_status_var = StringVar(value="Nenhuma base selecionada")
@@ -225,7 +220,7 @@ class LauncherApp(Tk):
         self._configure_styles()
         self._build_ui()
         self.refresh_bases()
-        self._update_api_status()
+        self.after(300, self._ensure_api_started)
         self.after(5000, self._auto_refresh_tick)
 
     def _configure_styles(self) -> None:
@@ -234,14 +229,13 @@ class LauncherApp(Tk):
             style.theme_use("clam")
         except Exception:
             pass
-
         style.configure("TFrame", background=BG)
         style.configure("TLabel", background=BG, foreground=TEXT, font=("Segoe UI", 10))
         style.configure("TButton", padding=(14, 8), font=("Segoe UI", 10, "bold"))
         style.configure("TEntry", fieldbackground=PANEL, foreground=TEXT, insertcolor=TEXT)
         style.configure("TCombobox", fieldbackground=PANEL, foreground=TEXT, background=PANEL)
         style.map("TCombobox", fieldbackground=[("readonly", PANEL)], foreground=[("readonly", TEXT)])
-        style.configure("Treeview", background=PANEL, fieldbackground=PANEL, foreground=TEXT, rowheight=34)
+        style.configure("Treeview", background=PANEL, fieldbackground=PANEL, foreground=TEXT, rowheight=34, borderwidth=0)
         style.configure("Treeview.Heading", background=PANEL_ALT, foreground=TEXT, font=("Segoe UI", 10, "bold"))
         style.map("Treeview", background=[("selected", "#12324a")], foreground=[("selected", "#ffffff")])
         style.configure("TCheckbutton", background=BG, foreground=TEXT, font=("Segoe UI", 9))
@@ -264,7 +258,6 @@ class LauncherApp(Tk):
         canvas.create_text(44, 44, text="DB", fill=TEXT, font=("Segoe UI", 18, "bold"))
 
         tk.Label(left, text="BIMobile API", bg=PANEL, fg=TEXT, font=("Segoe UI", 16, "bold")).pack()
-        tk.Label(left, text="Gerenciador de Base de Dados", bg=PANEL, fg=MUTED, font=("Segoe UI", 9)).pack(pady=(4, 14))
 
         status_box = tk.Frame(left, bg=PANEL_ALT, highlightbackground=BORDER, highlightthickness=1)
         status_box.pack(fill="x", padx=16, pady=10)
@@ -293,15 +286,14 @@ class LauncherApp(Tk):
         tk.Label(header, text="Bases Cadastradas", bg=BG, fg=TEXT, font=("Segoe UI", 18, "bold")).pack(anchor="w")
         tk.Label(header, text="Selecione uma base para editar, testar conexão ou definir como padrão.", bg=BG, fg=MUTED, font=("Segoe UI", 10)).pack(anchor="w", pady=(4, 0))
 
-        list_frame = tk.Frame(center, bg=PANEL, highlightbackground=BORDER, highlightthickness=1)
+        list_frame = tk.Frame(center, bg=PANEL)
         list_frame.pack(fill="both", expand=True)
 
-        self.tree = ttk.Treeview(list_frame, columns=("descricao", "servidor", "porta", "padrao", "ativo"), show="headings", selectmode="browse")
+        self.tree = ttk.Treeview(list_frame, columns=("descricao", "servidor", "porta", "ativo"), show="headings", selectmode="browse")
         for column, title, width in (
-            ("descricao", "Descrição", 260),
-            ("servidor", "Servidor", 140),
-            ("porta", "Porta", 80),
-            ("padrao", "Padrão", 90),
+            ("descricao", "Descrição", 300),
+            ("servidor", "Servidor", 180),
+            ("porta", "Porta", 100),
             ("ativo", "Ativo", 80),
         ):
             self.tree.heading(column, text=title)
@@ -319,7 +311,6 @@ class LauncherApp(Tk):
         toggles = tk.Frame(bottom, bg=BG)
         toggles.pack(side="right")
         ttk.Checkbutton(toggles, text="Selecionar Base ao iniciar o sistema?", variable=self.select_on_start_var, command=self._toggle_select_on_start).pack(side="left", padx=12)
-        ttk.Checkbutton(toggles, text="Atualizar", variable=self.auto_refresh_var).pack(side="left")
 
     def _build_actions_panel(self, parent: tk.Widget) -> None:
         panel = tk.Frame(parent, bg=BG, width=190)
@@ -327,23 +318,13 @@ class LauncherApp(Tk):
         panel.pack_propagate(False)
 
         tk.Label(panel, text="Ações", bg=BG, fg=TEXT, font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(8, 12))
-
-        for label, callback in (
-            ("Selecionar", self.select_base),
-            ("Base Padrão", self.set_default_base),
-            ("Iniciar API", self.handle_start_api),
-            ("Parar API", self.handle_stop_api),
-            ("Testar API", self.handle_test_api),
-            ("Docs", self.handle_open_docs),
-            ("Fechar", self.destroy),
-        ):
+        for label, callback in (("Selecionar", self.select_base), ("Fechar", self.destroy)):
             ttk.Button(panel, text=label, command=callback).pack(fill="x", pady=7)
 
-        hint = tk.Frame(panel, bg=PANEL, highlightbackground=BORDER, highlightthickness=1)
+        hint = tk.Frame(panel, bg=PANEL)
         hint.pack(fill="x", pady=(18, 0))
         tk.Label(hint, text="Status", bg=PANEL, fg=TEXT, font=("Segoe UI", 10, "bold")).pack(anchor="w", padx=12, pady=(12, 4))
-        tk.Label(hint, text="API: http://localhost:8000", bg=PANEL, fg=MUTED, font=("Segoe UI", 9)).pack(anchor="w", padx=12, pady=2)
-        tk.Label(hint, text="Docs: /docs", bg=PANEL, fg=MUTED, font=("Segoe UI", 9)).pack(anchor="w", padx=12, pady=(2, 12))
+        tk.Label(hint, text="API inicia automaticamente", bg=PANEL, fg=MUTED, font=("Segoe UI", 9)).pack(anchor="w", padx=12, pady=(2, 12))
 
     def _tick_clock(self) -> None:
         from datetime import datetime
@@ -355,9 +336,16 @@ class LauncherApp(Tk):
         self.store.set_select_on_start(bool(self.select_on_start_var.get()))
 
     def _auto_refresh_tick(self) -> None:
-        if self.auto_refresh_var.get():
-            self.refresh_bases()
         self.after(5000, self._auto_refresh_tick)
+
+    def _ensure_api_started(self) -> None:
+        def worker() -> None:
+            if not is_api_running():
+                self.after(0, lambda: self.api_status_var.set("Inicializando API..."))
+                start_api()
+            self.after(0, self._update_api_status)
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def refresh_bases(self) -> None:
         config = self.store.load_bases_config()
@@ -375,7 +363,6 @@ class LauncherApp(Tk):
                     base.get("descricao", ""),
                     base.get("servidor", ""),
                     base.get("porta", ""),
-                    "Sim" if base.get("base_padrao") else "Não",
                     "Sim" if base.get("ativo", True) else "Não",
                 ),
             )
@@ -396,18 +383,15 @@ class LauncherApp(Tk):
             self.selection_status_var.set("Nenhuma base selecionada")
             self.connection_status_var.set("Banco não testado")
             return
-        self.selection_status_var.set(f"{base.get('descricao', '')}{' - padrão' if base.get('base_padrao') else ''}")
+        self.selection_status_var.set(str(base.get("descricao", "")))
         self._sync_connection_status(base)
 
     def _sync_connection_status(self, base: dict[str, object]) -> None:
         result = test_connection(base)
         if result.get("ok"):
-            if result.get("mode") == "mock":
-                self.connection_status_var.set("Banco em modo mock")
-            else:
-                self.connection_status_var.set("Banco conectado")
-            return
-        self.connection_status_var.set("Falha de conexão")
+            self.connection_status_var.set("Banco conectado" if result.get("mode") != "mock" else "Banco em modo mock")
+        else:
+            self.connection_status_var.set("Falha de conexão")
 
     def _on_tree_select(self, _event=None) -> None:
         self.selected_base_id = self.get_current_tree_selection()
@@ -441,8 +425,6 @@ class LauncherApp(Tk):
                 base_id = str(existing.get("id"))
         if base_id:
             payload["id"] = base_id
-        if payload.get("base_padrao"):
-            self.store.set_default(str(payload["id"]))
         self.store.upsert_base(payload)
         self.refresh_bases()
 
@@ -466,43 +448,6 @@ class LauncherApp(Tk):
         self.tree.focus(self.selected_base_id)
         self.tree.see(self.selected_base_id)
         self._refresh_selection_label()
-        messagebox.showinfo("Selecionar Base", f"Base selecionada: {base.get('descricao', '')}", parent=self)
-
-    def set_default_base(self) -> None:
-        base = self.get_selected_base()
-        if base is None:
-            messagebox.showwarning("Base Padrão", "Selecione uma base primeiro.", parent=self)
-            return
-        self.store.set_default(str(base.get("id")))
-        self.refresh_bases()
-        messagebox.showinfo("Base Padrão", f"{base.get('descricao', '')} definida como base padrão.", parent=self)
-
-    def handle_start_api(self) -> None:
-        result = start_api()
-        self._update_api_status()
-        if result.get("ok"):
-            messagebox.showinfo("Iniciar API", str(result.get("message", "")), parent=self)
-        else:
-            messagebox.showerror("Iniciar API", str(result.get("message", "")), parent=self)
-
-    def handle_stop_api(self) -> None:
-        result = stop_api()
-        self._update_api_status()
-        if result.get("ok"):
-            messagebox.showinfo("Parar API", str(result.get("message", "")), parent=self)
-        else:
-            messagebox.showwarning("Parar API", str(result.get("message", "")), parent=self)
-
-    def handle_test_api(self) -> None:
-        result = test_health()
-        self._update_api_status()
-        if result.get("ok"):
-            messagebox.showinfo("Testar API", str(result.get("message", "")), parent=self)
-        else:
-            messagebox.showerror("Testar API", str(result.get("message", "")), parent=self)
-
-    def handle_open_docs(self) -> None:
-        open_docs()
 
     def _update_api_status(self) -> None:
         self.api_status_var.set("API rodando em http://localhost:8000" if is_api_running() else "API parada")

@@ -37,7 +37,7 @@ if not exist "release\README_INSTALACAO.txt" (
     echo.
     echo 1. Execute BIMobile API Manager.exe.
     echo 2. Cadastre ou selecione uma base Firebird.
-    echo 3. Use Iniciar API para subir a FastAPI local.
+    echo 3. A API inicia automaticamente ao abrir o gerenciador.
     echo 4. O gerenciador cria e atualiza os arquivos em .\data.
   )
 )
