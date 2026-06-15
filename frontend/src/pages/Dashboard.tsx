@@ -44,6 +44,112 @@ function formatInteger(value: number) {
   return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value)
 }
 
+function BranchSelector() {
+  const [open, setOpen] = useState(false)
+  const branchCount = dashboardCopy.filters.branch.length
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex h-10 min-w-[220px] items-center justify-between gap-3 rounded-full border border-white/10 bg-[#09111e] px-4 text-left text-sm text-slate-100 transition-colors hover:bg-[#0e1727]"
+      >
+        <span className="truncate">Filiais: {branchCount} selecionada(s)</span>
+        <MaterialSymbol icon={open ? 'expand_less' : 'expand_more'} className="text-[18px] text-slate-400" />
+      </button>
+
+      {open ? (
+        <div className="absolute left-0 top-[calc(100%+8px)] z-50 w-[320px] rounded-2xl border border-white/10 bg-[#09111e] p-2 shadow-[0_20px_60px_rgba(0,0,0,0.55)]">
+          <div className="flex items-center justify-between px-3 py-2 text-xs text-slate-400">
+            <span>Filiais</span>
+            <button className="text-slate-300 hover:text-white" type="button">
+              Limpar
+            </button>
+          </div>
+          <div className="space-y-1">
+            {dashboardCopy.filters.branch.map((branch) => (
+              <button
+                key={branch}
+                type="button"
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-slate-100 transition-colors hover:bg-white/5"
+              >
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-sky-500 text-[12px] text-white">
+                  <MaterialSymbol icon="check" className="text-[13px]" />
+                </span>
+                <span className="truncate">{branch}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function OverviewToolbar() {
+  return (
+    <div className="fixed left-0 right-0 top-0 z-30 border-b border-white/10 bg-[#030712]/95 px-4 py-3 text-slate-100 backdrop-blur lg:left-[72px]">
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="flex h-10 min-w-[220px] items-center gap-3 rounded-full border border-white/10 bg-[#09111e] px-4 text-slate-400">
+          <MaterialSymbol icon="search" className="text-[18px]" />
+          <input
+            aria-label="Pesquisar"
+            className="w-full border-0 bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-500"
+            placeholder="Pesquisar..."
+            type="text"
+          />
+        </label>
+
+        <BranchSelector />
+
+        <button
+          type="button"
+          className="rounded-full border border-white/10 bg-[#09111e] px-4 py-2 text-sm text-slate-300 transition-colors hover:bg-[#0e1727] hover:text-white"
+        >
+          Editar
+        </button>
+
+        <button
+          type="button"
+          className="flex h-10 items-center gap-2 rounded-full border border-white/10 bg-[#09111e] px-4 text-sm text-slate-100 transition-colors hover:bg-[#0e1727]"
+        >
+          2026
+          <MaterialSymbol icon="expand_more" className="text-[18px] text-slate-400" />
+        </button>
+
+        <button
+          type="button"
+          className="flex h-10 items-center gap-2 rounded-full border border-white/10 bg-[#09111e] px-4 text-sm text-slate-100 transition-colors hover:bg-[#0e1727]"
+        >
+          Jun
+          <MaterialSymbol icon="expand_more" className="text-[18px] text-slate-400" />
+        </button>
+
+        <div className="ml-auto flex items-center gap-3">
+          <button
+            type="button"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-amber-400/20 bg-[#09111e] text-amber-300"
+          >
+            <MaterialSymbol icon="warning" className="text-[18px]" />
+            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-400 px-1 text-[11px] font-bold text-[#09111e]">
+              2
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className="flex h-10 items-center gap-2 rounded-full bg-sky-500 px-5 text-sm font-semibold text-white transition-colors hover:bg-sky-400"
+          >
+            <MaterialSymbol icon="sync" className="text-[18px]" />
+            Atualizar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function OverviewKpiCard({
   title,
   value,
@@ -60,35 +166,35 @@ function OverviewKpiCard({
   const toneStyles =
     tone === 'positive'
       ? {
-          card: 'border-emerald-400/20 bg-emerald-500/10',
-          icon: 'bg-emerald-500/15 text-emerald-300',
-          title: 'text-emerald-200',
+          card: 'border-emerald-400/10 bg-[#0a1220]/95',
+          icon: 'bg-emerald-500/10 text-emerald-300',
+          title: 'text-slate-300',
           value: 'text-emerald-100',
         }
       : tone === 'negative'
         ? {
-            card: 'border-rose-400/20 bg-rose-500/10',
-            icon: 'bg-rose-500/15 text-rose-300',
-            title: 'text-rose-200',
+            card: 'border-rose-400/10 bg-[#0a1220]/95',
+            icon: 'bg-rose-500/10 text-rose-300',
+            title: 'text-slate-300',
             value: 'text-rose-50',
           }
         : {
-            card: 'border-sky-400/20 bg-sky-500/10',
-            icon: 'bg-sky-500/15 text-sky-300',
-            title: 'text-sky-200',
+            card: 'border-white/10 bg-[#0a1220]/95',
+            icon: 'bg-sky-500/10 text-sky-300',
+            title: 'text-slate-300',
             value: 'text-slate-50',
           }
 
   return (
-    <article className={`rounded-2xl border p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)] backdrop-blur ${toneStyles.card}`}>
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${toneStyles.icon}`}>
+    <article className={`min-h-[154px] rounded-[22px] border p-4 shadow-[0_14px_40px_rgba(0,0,0,0.32)] backdrop-blur ${toneStyles.card}`}>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className={`flex h-9 w-9 items-center justify-center rounded-full ${toneStyles.icon}`}>
           <MaterialSymbol icon={icon} className="text-[20px]" filled />
         </div>
       </div>
-      <p className={`text-[11px] font-semibold uppercase tracking-[0.24em] ${toneStyles.title}`}>{title}</p>
-      <p className={`mt-2 text-2xl font-extrabold tracking-tight ${toneStyles.value}`}>{value}</p>
-      <p className="mt-2 text-sm leading-5 text-slate-300">{description}</p>
+      <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${toneStyles.title}`}>{title}</p>
+      <p className={`mt-1 text-[20px] font-extrabold leading-tight tracking-tight ${toneStyles.value}`}>{value}</p>
+      <p className="mt-2 max-w-[28ch] text-[12px] leading-[1.35] text-slate-400">{description}</p>
     </article>
   )
 }
@@ -107,8 +213,8 @@ function OverviewSection({
   return (
     <section className="space-y-4">
       <div className="space-y-1">
-        <h2 className="text-sm font-extrabold uppercase tracking-[0.28em] text-slate-100">{title}</h2>
-        <p className="text-sm text-slate-400">{subtitle}</p>
+        <h2 className="text-[14px] font-extrabold tracking-tight text-slate-100">{title}</h2>
+        <p className="text-[12px] text-slate-400">{subtitle}</p>
       </div>
       <div className={`grid grid-cols-1 gap-4 md:grid-cols-2 ${columnsClass}`}>{children}</div>
     </section>
@@ -126,62 +232,77 @@ function OverviewModule() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-[32px] border border-white/10 bg-[#07111f] px-5 py-6 shadow-[0_40px_120px_rgba(0,0,0,0.4)] lg:px-6">
-        <FiltersBar />
+      <OverviewToolbar />
 
-        <div className="mt-6 space-y-8">
-          <OverviewSection title="KPIs CRÍTICOS" subtitle="Leitura rápida do negócio em segundos" columnsClass="xl:grid-cols-4">
+      <div className="space-y-8 px-1 pt-[80px]">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-[20px] font-extrabold tracking-tight text-slate-100">Visão Geral</h1>
+            <p className="text-[12px] font-medium uppercase tracking-[0.18em] text-slate-500">Painel Executivo</p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-[12px] text-slate-400">Atualizado às 11:45:25</span>
+            <div className="flex rounded-full border border-white/10 bg-[#09111e] p-1 text-[12px] font-semibold text-slate-400">
+              <span className="rounded-full bg-white/10 px-3 py-1 text-white">KPIs</span>
+              <span className="rounded-full px-3 py-1">Gráficos</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-8">
+          <OverviewSection title="KPIs críticos" subtitle="Leitura rápida do negócio em segundos" columnsClass="xl:grid-cols-4">
             <OverviewKpiCard
-              title="TOTAL GERAL DE VENDAS (R$)"
+              title="Total Geral de Vendas (R$)"
               value={formatCurrency(overview.total_geral_vendas)}
               description="Valor total vendido no período selecionado."
               icon="payments"
               tone="positive"
             />
             <OverviewKpiCard
-              title="LUCRO BRUTO (R$)"
+              title="Lucro Bruto (R$)"
               value={formatCurrency(overview.lucro_bruto)}
               description="Diferença entre o valor vendido e o custo dos produtos ou serviços."
               icon="trending_up"
               tone="positive"
             />
             <OverviewKpiCard
-              title="TICKET MÉDIO"
+              title="Ticket Médio"
               value={formatCurrency(overview.ticket_medio)}
               description="Valor médio de cada venda realizada no período."
               icon="sell"
               tone="info"
             />
             <OverviewKpiCard
-              title="PREVISTO A RECEBER (MÊS)"
+              title="Previsto a Receber (Mês)"
               value={formatCurrency(overview.previsto_receber_mes)}
               description="Valor que a empresa ainda tem para receber dos clientes."
               icon="account_balance_wallet"
               tone="positive"
             />
             <OverviewKpiCard
-              title="O.S EM SERVIÇO"
+              title="O.S em Serviço"
               value={formatInteger(overview.os_em_servico)}
               description="Ordens de Serviço que ainda estão em andamento."
               icon="construction"
               tone="info"
             />
             <OverviewKpiCard
-              title="O.S ENCERRADAS"
+              title="O.S Encerradas"
               value={formatInteger(overview.os_encerradas)}
               description="Ordens de Serviço concluídas no período."
               icon="task_alt"
               tone="positive"
             />
             <OverviewKpiCard
-              title="O.S CANCELADAS"
+              title="O.S Canceladas"
               value={formatInteger(overview.os_canceladas)}
               description="Ordens de Serviço canceladas no período."
               icon="cancel"
               tone="negative"
             />
             <OverviewKpiCard
-              title="PREVISTO A PAGAR (MÊS)"
+              title="Previsto a Pagar (Mês)"
               value={formatCurrency(overview.previsto_pagar_mes)}
               description="Valor que a empresa ainda possui de compromissos financeiros a pagar."
               icon="payments"
@@ -189,37 +310,37 @@ function OverviewModule() {
             />
           </OverviewSection>
 
-          <OverviewSection title="OPERACIONAL" subtitle="Indicadores de execução e volume" columnsClass="xl:grid-cols-5">
+          <OverviewSection title="Operacional" subtitle="Indicadores de execução e volume" columnsClass="xl:grid-cols-5">
             <OverviewKpiCard
-              title="NÚMERO DE VENDAS"
+              title="Número de Vendas"
               value={formatInteger(overview.numero_vendas)}
               description="Quantidade total de Ordens de Serviço registradas no período."
               icon="point_of_sale"
               tone="info"
             />
             <OverviewKpiCard
-              title="DEVOLUÇÕES"
+              title="Devoluções"
               value={formatInteger(overview.devolucoes)}
               description="Quantidade de vendas devolvidas pelos clientes no período."
               icon="keyboard_return"
               tone="negative"
             />
             <OverviewKpiCard
-              title="QTD. PRODUTOS VENDIDOS"
+              title="Qtd. Produtos Vendidos"
               value={formatNumber(overview.qtd_produtos_vendidos)}
               description="Quantidade total de itens vendidos no período."
               icon="inventory_2"
               tone="info"
             />
             <OverviewKpiCard
-              title="ORÇAMENTOS"
+              title="Orçamentos"
               value={formatInteger(overview.orcamentos)}
               description="Quantidade de orçamentos registrados no período."
               icon="description"
               tone="info"
             />
             <OverviewKpiCard
-              title="AUTORIZAÇÕES NF"
+              title="Autorizações NF"
               value={formatInteger(overview.autorizacoes_nf)}
               description="Quantidade de notas fiscais autorizadas no período."
               icon="receipt_long"
@@ -227,37 +348,37 @@ function OverviewModule() {
             />
           </OverviewSection>
 
-          <OverviewSection title="VALOR TOTAL DO ESTOQUE (R$)" subtitle="Indicadores" columnsClass="xl:grid-cols-5">
+          <OverviewSection title="Valor Total do Estoque (R$)" subtitle="Indicadores" columnsClass="xl:grid-cols-5">
             <OverviewKpiCard
-              title="VALOR TOTAL DO ESTOQUE (R$)"
+              title="Valor Total do Estoque (R$)"
               value={formatCurrency(overview.valor_total_estoque)}
               description="Valor de venda dos itens atualmente em estoque."
               icon="inventory"
               tone="info"
             />
             <OverviewKpiCard
-              title="CUSTO TOTAL DO ESTOQUE (R$)"
+              title="Custo Total do Estoque (R$)"
               value={formatCurrency(overview.custo_total_estoque)}
               description="Custo de aquisição dos itens atualmente em estoque."
               icon="sell"
               tone="info"
             />
             <OverviewKpiCard
-              title="QUANTIDADE TOTAL EM ESTOQUE"
+              title="Quantidade Total em Estoque"
               value={formatNumber(overview.quantidade_total_estoque)}
               description="Quantidade consolidada dos itens disponíveis."
               icon="view_in_ar"
               tone="info"
             />
             <OverviewKpiCard
-              title="ESTOQUE ABAIXO DO MÍNIMO"
+              title="Estoque Abaixo do Mínimo"
               value={formatInteger(overview.estoque_abaixo_minimo)}
               description="Itens que exigem atenção imediata de reposição."
               icon="warning"
               tone="negative"
             />
             <OverviewKpiCard
-              title="ESTOQUE ACIMA DO MÁXIMO"
+              title="Estoque Acima do Máximo"
               value={formatInteger(overview.estoque_acima_maximo)}
               description="Itens com saldo acima do limite configurado."
               icon="north"
@@ -444,11 +565,11 @@ export function Dashboard() {
             : 'overview'
 
   return (
-    <main className="min-h-screen bg-background text-on-surface">
+    <main className="min-h-screen bg-[#030712] text-slate-100">
       <Sidebar />
-      <Header />
+      {moduleName === 'overview' ? null : <Header />}
 
-      <div className={`min-h-screen px-gutter pb-12 pt-24 lg:ml-[256px] ${moduleName === 'overview' ? 'bg-[#07111f] text-slate-100' : ''}`}>
+      <div className={`min-h-screen px-4 pb-12 pt-20 lg:ml-[72px] ${moduleName === 'overview' ? 'bg-[#030712] text-slate-100' : 'bg-background text-on-surface'}`}>
         {moduleName === 'overview' ? <OverviewModule /> : <LegacyDashboardModule moduleName={moduleName} />}
       </div>
     </main>

@@ -4,43 +4,56 @@ import { MaterialSymbol } from './MaterialSymbol'
 
 export function Sidebar() {
   return (
-    <aside className="fixed left-0 top-0 z-50 hidden h-full w-[256px] flex-col border-r border-outline-variant bg-surface py-6 px-4 lg:flex">
-      <div className="mb-8 flex items-center gap-3 px-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white">
-          <MaterialSymbol icon="business" className="text-[20px]" />
-        </div>
-        <div>
-          <h2 className="text-headline-md font-bold text-primary">Enterprise Admin</h2>
-          <p className="text-label-sm text-on-surface-variant">Multi-Org Console</p>
+    <aside className="fixed left-0 top-0 z-50 hidden h-full w-[72px] flex-col border-r border-white/10 bg-[#040814]/95 px-2 py-3 text-slate-100 backdrop-blur lg:flex">
+      <div className="mb-4 flex justify-center">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white text-[#07111f] shadow-[0_0_0_1px_rgba(0,0,0,0.25)]">
+          <MaterialSymbol icon="assessment" className="text-[18px]" filled />
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1">
+      <button
+        type="button"
+        className="mb-4 flex h-9 w-9 items-center justify-center self-center rounded-full border border-white/10 bg-[#0a1220] text-slate-300 transition-colors hover:bg-[#132035] hover:text-white"
+      >
+        <MaterialSymbol icon="chevron_right" className="text-[18px]" />
+      </button>
+
+      <nav className="flex-1 space-y-3">
         {dashboardCopy.nav.map((item) => (
           <NavLink
             key={item.href}
             to={item.href}
             end={item.href === '/dashboard'}
+            title={item.label}
             className={({ isActive }) =>
               [
-                'flex items-center gap-3 rounded-lg px-4 py-3 transition-transform duration-150',
+                'flex h-11 w-11 items-center justify-center rounded-2xl border transition-all duration-150',
                 isActive
-                  ? 'border-r-4 border-primary bg-surface-container-high text-primary font-bold scale-[0.98]'
-                  : 'text-on-surface-variant hover:bg-surface-container-high',
+                  ? 'border-sky-400/20 bg-[#0d1b31] text-sky-400 shadow-[0_0_0_1px_rgba(56,189,248,0.08)]'
+                  : 'border-transparent text-slate-400 hover:border-white/10 hover:bg-[#0d1526] hover:text-slate-100',
               ].join(' ')
             }
           >
             <MaterialSymbol icon={item.icon} className="text-[20px]" filled={item.active} />
-            <span className="text-label-md">{item.label}</span>
           </NavLink>
         ))}
       </nav>
 
-      <div className="mt-auto border-t border-outline-variant pt-4">
-        <a className="flex items-center gap-3 rounded-lg px-4 py-3 text-on-surface-variant transition-colors hover:bg-surface-container-high" href="#">
-          <MaterialSymbol icon="help" className="text-[20px]" />
-          <span className="text-label-md">{dashboardCopy.helpLabel}</span>
+      <div className="mt-auto flex flex-col items-center gap-3 pb-2">
+        <a
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-slate-400 transition-colors hover:bg-[#0d1526] hover:text-white"
+          href="#"
+          title={dashboardCopy.helpLabel}
+        >
+          <MaterialSymbol icon="help" className="text-[18px]" />
         </a>
+        <button
+          type="button"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-slate-400 transition-colors hover:bg-[#0d1526] hover:text-white"
+          title="Tema"
+        >
+          <MaterialSymbol icon="dark_mode" className="text-[18px]" />
+        </button>
       </div>
     </aside>
   )
