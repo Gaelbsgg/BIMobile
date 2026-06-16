@@ -13,7 +13,7 @@ if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
 from app.database.firebird import test_connection  # noqa: E402
-from launcher.api_runner import start_api, stop_api  # noqa: E402
+from launcher.api_runner import open_docs, start_api, stop_api  # noqa: E402
 from launcher.config_store import ConfigStore  # noqa: E402
 
 
@@ -889,8 +889,12 @@ class LauncherApp(tk.Tk):
 
     def _start_api_async(self) -> None:
         def worker() -> None:
-            start_api()
-            self.after(0, lambda: self.api_status_var.set("API pronta"))
+            result = start_api()
+            if result.get("ok"):
+                self.after(0, open_docs)
+                self.after(0, lambda: self.api_status_var.set("API pronta e Docs abertos"))
+            else:
+                self.after(0, lambda: self.api_status_var.set("Falha ao iniciar API"))
 
         threading.Thread(target=worker, daemon=True).start()
 
