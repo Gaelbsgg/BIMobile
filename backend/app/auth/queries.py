@@ -1,0 +1,21 @@
+from __future__ import annotations
+
+
+SQL_EMPRESA_IDENTIDADE = """
+SELECT FIRST 1
+    NOMEFANTASIA,
+    CGC,
+    LOGINLIBERACAO
+FROM GEMPRESA
+"""
+
+
+SQL_USUARIO_POR_LOGIN = """
+SELECT FIRST 1
+    NOME,
+    INATIVO,
+    SENHA
+FROM GUSUARIOS
+WHERE
+    NOME = :LOGIN
+"""

@@ -17,10 +17,16 @@ class LoginRequest(BaseModel):
     base_id: str | None = None
 
     def normalized(self) -> dict:
+        token = self.token or self.empresa_token or ""
+        login = self.login or self.username or ""
+        senha = self.senha or self.password or ""
         return {
-            "token": self.token or self.empresa_token or "",
-            "login": self.login or self.username or "",
-            "senha": self.senha or self.password or "",
+            "token": token,
+            "empresa_token": self.empresa_token or self.token or "",
+            "login": login,
+            "username": self.username or self.login or "",
+            "senha": senha,
+            "password": self.password or self.senha or "",
             "base_id": self.base_id,
         }
 
@@ -55,9 +61,33 @@ class AuthUserResponse(BaseModel):
     base_id: str | None = None
 
 
+class UsuarioLoginResponse(BaseModel):
+    login: str
+    nome: str
+
+
+class EmpresaLoginResponse(BaseModel):
+    base_id: str
+    nome: str
+    cnpj: str
+    token_empresa: str
+
+
+class PermissoesLoginResponse(BaseModel):
+    visao_geral: bool = True
+    vendas: bool = True
+    financeiro: bool = True
+    estoque: bool = True
+    funcionarios: bool = True
+    configuracoes: bool = True
+
+
 class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    usuario: UsuarioLoginResponse
+    empresa: EmpresaLoginResponse
+    permissoes: PermissoesLoginResponse
     user: AuthUserResponse
     company: CompanyResponse
     permissions: dict = Field(default_factory=dict)
