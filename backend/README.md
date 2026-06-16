@@ -14,7 +14,7 @@ API local em FastAPI para autenticação, permissões e entrega de dados mockado
 
 - Python 3.11+.
 - Python 3.14 também é suportado com as versões atuais do `fastapi` e `pydantic` usadas aqui.
-- Firebird driver opcional para a fase real
+- Firebird driver opcional para a fase real (`firebird-driver` ou `fdb`)
 
 ## Instalação
 
@@ -45,6 +45,12 @@ pip install -r requirements.txt
 ```
 
 Se for conectar ao Firebird real depois, instale o driver opcional:
+
+```powershell
+pip install firebird-driver
+```
+
+Se o ambiente antigo do Firebird 2.5 exigir fallback, use também:
 
 ```powershell
 pip install fdb
@@ -130,7 +136,7 @@ O módulo `app/database/firebird.py` já está preparado para conexão real.
 - `test_connection(base_config)`
 - `execute_query(base_config, sql, params)`
 
-Se o driver não estiver instalado, a API continua funcionando em modo mock.
+Se nenhum driver estiver instalado, a API continua funcionando em modo mock.
 
 ## Netlify
 

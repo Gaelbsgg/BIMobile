@@ -16,6 +16,7 @@ set "TK_LIBRARY=%PY_ROOT%\tcl\tk8.6"
 
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+python -m pip install firebird-driver fdb
 python -m pip install pyinstaller
 
 if exist build rmdir /s /q build
@@ -28,6 +29,8 @@ python -m PyInstaller ^
   --name "ResultBI BIMobile API Manager" ^
   --collect-all tkinter ^
   --collect-all pystray ^
+  --hidden-import firebird.driver ^
+  --hidden-import fdb ^
   --add-data "data;data" ^
   --add-data "app;app" ^
   --add-data "%TCL_LIBRARY%;tcl\tcl8.6" ^

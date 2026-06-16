@@ -1,37 +1,27 @@
 from __future__ import annotations
 
+import importlib
 from typing import Any
 
-from app.config import get_settings
 
-
-def _load_driver():
-    settings = get_settings()
-    if settings.firebird_driver == "firebird.driver":
+def _load_driver() -> tuple[object | None, str | None]:
+    for module_name in ("firebird.driver", "fdb"):
         try:
-            import firebird.driver as driver  # type: ignore
-
-            return driver
+            driver = importlib.import_module(module_name)
+            return driver, module_name
         except Exception:
-            return None
+            continue
+    return None, None
 
-    try:
-        import fdb  # type: ignore
 
-        return fdb
-    except Exception:
-        try:
-            import firebird.driver as driver  # type: ignore
-
-            return driver
-        except Exception:
-            return None
+def _unavailable_message() -> str:
+    return "Nenhum driver Firebird foi encontrado. Instale firebird-driver ou fdb para habilitar a conexão real."
 
 
 def get_connection(base_config: dict[str, Any]):
-    driver = _load_driver()
+    driver, _driver_name = _load_driver()
     if driver is None:
-        raise RuntimeError("Driver Firebird não instalado. A API continuará em modo mock.")
+        raise RuntimeError(_unavailable_message())
 
     servidor = base_config.get("servidor") or base_config.get("host") or "127.0.0.1"
     porta = int(base_config.get("porta") or base_config.get("port") or 3050)
@@ -57,12 +47,12 @@ def get_connection(base_config: dict[str, Any]):
 
 
 def test_connection(base_config: dict[str, Any]) -> dict[str, Any]:
-    driver = _load_driver()
+    driver, driver_name = _load_driver()
     if driver is None:
         return {
-            "ok": True,
-            "mode": "mock",
-            "message": "Driver Firebird não instalado. A API continuará em modo mock.",
+            "ok": False,
+            "mode": "unavailable",
+            "message": _unavailable_message(),
             "base_id": base_config.get("id"),
         }
 
@@ -73,20 +63,20 @@ def test_connection(base_config: dict[str, Any]) -> dict[str, Any]:
         return {
             "ok": True,
             "mode": "real",
-            "message": "Conexão com Firebird validada com sucesso.",
+            "message": f"Conexão com Firebird validada com sucesso usando {driver_name}.",
             "base_id": base_config.get("id"),
         }
     except Exception as exc:
         return {
             "ok": False,
             "mode": "real",
-            "message": f"Falha ao conectar no Firebird: {exc}",
+            "message": f"Falha ao conectar no Firebird usando {driver_name or 'driver'}: {exc}",
             "base_id": base_config.get("id"),
         }
 
 
 def execute_query(base_config: dict[str, Any], sql: str, params: dict[str, Any] | tuple[Any, ...] | None = None) -> list[dict[str, Any]]:
-    driver = _load_driver()
+    driver, _driver_name = _load_driver()
     if driver is None:
         return []
 

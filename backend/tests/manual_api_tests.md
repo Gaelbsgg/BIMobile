@@ -14,6 +14,12 @@ pip install -r requirements.txt
 Opcional, apenas para ambiente com Firebird real:
 
 ```powershell
+pip install firebird-driver
+```
+
+Se o Firebird 2.5 exigir fallback:
+
+```powershell
 pip install fdb
 ```
 
