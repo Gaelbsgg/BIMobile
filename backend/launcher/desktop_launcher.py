@@ -192,6 +192,7 @@ class LauncherApp(tk.Tk):
         self._tray_lock = threading.Lock()
         self._tray_running = threading.Event()
         self._closing_requested = False
+        self._empty_state_visible = False
 
         self.select_on_start_var = BooleanVar(value=False)
         self.api_status_var = StringVar(value="Verificando API...")
@@ -719,6 +720,16 @@ class LauncherApp(tk.Tk):
         tree_scroll_x.grid(row=1, column=0, sticky="ew")
         self.tree.bind("<<TreeviewSelect>>", self._on_tree_select)
         self.tree.bind("<Double-1>", lambda _event: self.edit_selected())
+        self.empty_state_label = tk.Label(
+            table_frame,
+            text="Nenhuma base cadastrada. Clique em Nova para configurar.",
+            bg=INPUT_BG,
+            fg=MUTED,
+            font=("Segoe UI", 15, "normal"),
+            wraplength=520,
+            justify="center",
+        )
+        self.empty_state_label.place(relx=0.5, rely=0.5, anchor="center")
 
         nav = tk.Frame(panel, bg=PANEL)
         nav.pack(fill="x", padx=12, pady=(0, 8))
@@ -759,6 +770,7 @@ class LauncherApp(tk.Tk):
             bd=0,
             highlightthickness=0,
         ).pack(anchor="w", pady=(4, 0))
+        self._update_empty_state()
 
     def _build_form_view(self) -> None:
         base = self._get_form_base()
@@ -1090,6 +1102,18 @@ class LauncherApp(tk.Tk):
                 self.tree.focus(first_id)
                 self.tree.see(first_id)
                 self.selected_base_id = first_id
+        self._update_empty_state()
+
+    def _update_empty_state(self) -> None:
+        if not hasattr(self, "empty_state_label"):
+            return
+        should_show = not self.bases
+        if should_show and not self._empty_state_visible:
+            self.empty_state_label.lift()
+            self._empty_state_visible = True
+        elif not should_show and self._empty_state_visible:
+            self.empty_state_label.lower()
+            self._empty_state_visible = False
 
     def _get_form_base(self) -> dict[str, object]:
         if self.form_mode == "new":

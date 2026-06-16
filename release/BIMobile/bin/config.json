@@ -1,0 +1,30 @@
+{
+  "app": {
+    "name": "BIMobile",
+    "company": "ResultBI",
+    "version": "0.1.0"
+  },
+  "api": {
+    "host": "127.0.0.1",
+    "port": 8000,
+    "exe": "BIMobileAPI.exe",
+    "docs_url": "http://127.0.0.1:8000/docs",
+    "health_url": "http://127.0.0.1:8000/health"
+  },
+  "service": {
+    "name": "BIMobileAPI",
+    "display_name": "ResultBI BIMobile API",
+    "description": "Serviço local da API BIMobile para conexão com Firebird"
+  },
+  "paths": {
+    "data": "../data",
+    "logs": "../logs",
+    "bases_config": "../data/bases_config.json",
+    "permissions_config": "../data/permissions_config.json"
+  },
+  "cloudflared": {
+    "enabled": false,
+    "exe": "cloudflared.exe",
+    "tunnel_url": ""
+  }
+}

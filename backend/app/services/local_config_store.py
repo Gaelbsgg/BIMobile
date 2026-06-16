@@ -25,19 +25,7 @@ class LocalConfigStore:
                     "token": "EMP-001",
                     "name": "Empresa Demo",
                     "status": "active",
-                    "bases": [
-                        {
-                            "id": "base-1",
-                            "name": "Matriz",
-                            "alias": "matriz",
-                            "path": "C:/dados/matriz.fdb",
-                            "host": "127.0.0.1",
-                            "port": 3050,
-                            "username": "sysdba",
-                            "charset": "UTF8",
-                            "status": "mock",
-                        }
-                    ],
+                    "bases": [],
                     "users": [
                         {
                             "id": "user-admin",

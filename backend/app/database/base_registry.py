@@ -19,50 +19,8 @@ class BaseRegistry:
 
     def _default_data(self) -> dict[str, Any]:
         return {
-            "bases": [
-                self._normalize_base(
-                    {
-                        "id": "base-demo-matriz",
-                        "apelido": "Matriz",
-                        "descricao": "Matriz",
-                        "servidor": "127.0.0.1",
-                        "porta": 3050,
-                        "caminho_base": "C:/firebird/dados/",
-                        "nome_arquivo": "matriz.fdb",
-                        "caminho_fdb": "C:/firebird/dados/matriz.fdb",
-                        "usuario_firebird": "SYSDBA",
-                        "senha_firebird": "masterkey",
-                        "protocolo": "TCP-IP",
-                        "servidor_linux": False,
-                        "ativo": True,
-                        "base_padrao": True,
-                        "token_empresa": "001",
-                        "empresa_nome": "Empresa Demo Matriz",
-                        "empresa_cnpj": "00.000.000/0001-00",
-                    }
-                ),
-                self._normalize_base(
-                    {
-                        "id": "base-demo-filial",
-                        "apelido": "Filial",
-                        "descricao": "Filial",
-                        "servidor": "127.0.0.1",
-                        "porta": 3050,
-                        "caminho_base": "C:/firebird/dados/",
-                        "nome_arquivo": "filial.fdb",
-                        "caminho_fdb": "C:/firebird/dados/filial.fdb",
-                        "usuario_firebird": "SYSDBA",
-                        "senha_firebird": "masterkey",
-                        "protocolo": "TCP-IP",
-                        "servidor_linux": False,
-                        "ativo": True,
-                        "base_padrao": False,
-                        "token_empresa": "001",
-                        "empresa_nome": "Empresa Demo Matriz",
-                        "empresa_cnpj": "00.000.000/0001-00",
-                    }
-                ),
-            ]
+            "bases": [],
+            "selecionar_base_ao_iniciar": False,
         }
 
     def _read(self) -> dict[str, Any]:
