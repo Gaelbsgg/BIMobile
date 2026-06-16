@@ -3,12 +3,11 @@ from PyInstaller.utils.hooks import collect_all
 
 datas = [('data', 'data'), ('app', 'app'), ('C:\\Users\\gabriel.brito\\AppData\\Local\\Python\\pythoncore-3.14-64\\tcl\\tcl8.6', 'tcl\\tcl8.6'), ('C:\\Users\\gabriel.brito\\AppData\\Local\\Python\\pythoncore-3.14-64\\tcl\\tk8.6', 'tcl\\tk8.6')]
 binaries = [('C:\\Users\\gabriel.brito\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\_tkinter.pyd', '.'), ('C:\\Users\\gabriel.brito\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\tcl86t.dll', '.'), ('C:\\Users\\gabriel.brito\\AppData\\Local\\Python\\pythoncore-3.14-64\\DLLs\\tk86t.dll', '.')]
-hiddenimports = []
+hiddenimports = ['firebird.driver', 'fdb']
 tmp_ret = collect_all('tkinter')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('pystray')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
-hiddenimports += ['firebird.driver', 'fdb']
 
 
 a = Analysis(
@@ -39,7 +38,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,
+    console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
