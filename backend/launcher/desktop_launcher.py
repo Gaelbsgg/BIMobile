@@ -17,7 +17,7 @@ from launcher.api_runner import open_docs, start_api, stop_api  # noqa: E402
 from launcher.config_store import ConfigStore  # noqa: E402
 
 
-WINDOW_WIDTH = 1500
+WINDOW_WIDTH = 1600
 WINDOW_HEIGHT = 900
 
 BG = "#050b14"
@@ -93,16 +93,16 @@ class LauncherApp(tk.Tk):
             background=INPUT_BG,
             fieldbackground=INPUT_BG,
             foreground=TEXT,
-            rowheight=50,
+            rowheight=46,
             borderwidth=0,
-            font=("Segoe UI", 14, "bold"),
+            font=("Segoe UI", 13, "bold"),
         )
         style.configure(
             "BIMobile.Treeview.Heading",
             background=PANEL_ALT,
             foreground="#8fb4eb",
-            font=("Segoe UI", 16, "bold"),
-            padding=(12, 14),
+            font=("Segoe UI", 15, "bold"),
+            padding=(12, 12),
         )
         style.map(
             "BIMobile.Treeview",
@@ -148,37 +148,37 @@ class LauncherApp(tk.Tk):
         self.body = tk.Frame(self.main_card, bg=CARD)
         self.body.pack(fill="both", expand=True, padx=16, pady=(0, 16))
 
-        self.left_panel = tk.Frame(self.body, bg=PANEL, width=360)
+        self.left_panel = tk.Frame(self.body, bg=PANEL, width=280)
         self.left_panel.pack(side="left", fill="y", padx=(0, 14))
         self.left_panel.pack_propagate(False)
 
         self.center_panel = tk.Frame(self.body, bg=CARD)
         self.center_panel.pack(side="left", fill="both", expand=True)
 
-        self.right_panel = tk.Frame(self.body, bg=PANEL, width=300, highlightbackground=BORDER, highlightthickness=1)
+        self.right_panel = tk.Frame(self.body, bg=PANEL, width=280, highlightbackground=BORDER, highlightthickness=1)
         self.right_panel.pack(side="right", fill="y", padx=(14, 0))
         self.right_panel.pack_propagate(False)
 
         self.content_host = tk.Frame(self.center_panel, bg=CARD)
-        self.content_host.pack(fill="both", expand=True)
+        self.content_host.place(relx=0.5, rely=0, anchor="n", relheight=1, width=930)
 
         self._build_left_sidebar()
 
     def _build_left_sidebar(self) -> None:
         top = tk.Frame(self.left_panel, bg=PANEL)
-        top.pack(fill="both", expand=True, padx=20, pady=18)
+        top.pack(fill="both", expand=True, padx=16, pady=16)
 
-        logo = tk.Canvas(top, width=240, height=270, bg=PANEL, highlightthickness=0)
-        logo.pack(pady=(18, 6))
+        logo = tk.Canvas(top, width=220, height=250, bg=PANEL, highlightthickness=0)
+        logo.pack(pady=(12, 6))
         self._draw_logo(logo)
 
         text_box = tk.Frame(top, bg=PANEL)
-        text_box.pack(fill="x", pady=(8, 0))
-        tk.Label(text_box, text="ResultBI", bg=PANEL, fg=TEXT, font=("Segoe UI", 24, "bold")).pack(anchor="w")
-        tk.Label(text_box, text="BIMobile API", bg=PANEL, fg="#dfe9f8", font=("Segoe UI", 19, "normal")).pack(anchor="w", pady=(2, 0))
+        text_box.pack(fill="x", pady=(6, 0))
+        tk.Label(text_box, text="ResultBI", bg=PANEL, fg=TEXT, font=("Segoe UI", 23, "bold")).pack(anchor="w")
+        tk.Label(text_box, text="BIMobile API", bg=PANEL, fg="#dfe9f8", font=("Segoe UI", 17, "normal")).pack(anchor="w", pady=(2, 0))
 
         line = tk.Frame(text_box, bg=LINE, height=2, width=180)
-        line.pack(anchor="w", pady=(22, 12))
+        line.pack(anchor="w", pady=(18, 10))
         tk.Frame(line, bg=ACCENT, height=2, width=46).pack(side="left")
 
         tk.Label(
@@ -186,10 +186,10 @@ class LauncherApp(tk.Tk):
             text="Conexão local segura com Firebird",
             bg=PANEL,
             fg=MUTED,
-            font=("Segoe UI", 12, "normal"),
-        ).pack(anchor="w", pady=(6, 0))
+            font=("Segoe UI", 11, "normal"),
+        ).pack(anchor="w", pady=(4, 0))
 
-        decor = tk.Canvas(self.left_panel, width=360, height=210, bg=PANEL, highlightthickness=0)
+        decor = tk.Canvas(self.left_panel, width=280, height=210, bg=PANEL, highlightthickness=0)
         decor.place(relx=0, rely=0.77)
         decor.create_oval(-58, 42, 128, 228, fill="#0a1220", outline="#0a1220")
         decor.create_oval(84, 86, 250, 252, fill="#0c1424", outline="#0c1424")
@@ -197,16 +197,16 @@ class LauncherApp(tk.Tk):
 
     def _draw_logo(self, canvas: tk.Canvas) -> None:
         # Simple neon database mark drawn directly on the canvas.
-        base_x = 70
-        base_y = 24
-        for index, offset in enumerate((0, 54, 108)):
+        base_x = 56
+        base_y = 20
+        for offset in (0, 48, 96):
             y = base_y + offset
-            canvas.create_oval(base_x, y, base_x + 150, y + 48, fill="#133d8e", outline="#1e90ff", width=2)
-            canvas.create_rectangle(base_x, y + 24, base_x + 150, y + 70, fill="#0c1f46", outline="#0c1f46")
-            canvas.create_oval(base_x, y + 46, base_x + 150, y + 86, fill="#0c1f46", outline="#0c1f46")
-            canvas.create_arc(base_x, y + 52, base_x + 150, y + 92, start=180, extent=180, style="arc", outline="#1e90ff", width=2)
+            canvas.create_oval(base_x, y, base_x + 132, y + 42, fill="#133d8e", outline="#1e90ff", width=2)
+            canvas.create_rectangle(base_x, y + 21, base_x + 132, y + 62, fill="#0c1f46", outline="#0c1f46")
+            canvas.create_oval(base_x, y + 40, base_x + 132, y + 76, fill="#0c1f46", outline="#0c1f46")
+            canvas.create_arc(base_x, y + 46, base_x + 132, y + 82, start=180, extent=180, style="arc", outline="#1e90ff", width=2)
 
-        canvas.create_text(160, 160, text="⚙", fill=ACCENT, font=("Segoe UI Symbol", 68, "bold"))
+        canvas.create_text(138, 144, text="⚙", fill=ACCENT, font=("Segoe UI Symbol", 58, "bold"))
 
     def _clear_frame(self, frame: tk.Widget) -> None:
         for child in frame.winfo_children():
@@ -351,10 +351,10 @@ class LauncherApp(tk.Tk):
         wrapper.pack(fill="both", expand=True, padx=(0, 10))
 
         panel = self._panel_card(wrapper, bg=PANEL)
-        panel.pack(fill="both", expand=True, padx=(0, 0), pady=(0, 18))
+        panel.pack(fill="both", expand=True, pady=(0, 14))
 
-        tk.Label(panel, text="Descrição", bg=PANEL, fg="#93b5ec", font=("Segoe UI", 18, "bold")).pack(
-            anchor="w", padx=20, pady=(16, 10)
+        tk.Label(panel, text="Descrição", bg=PANEL, fg="#93b5ec", font=("Segoe UI", 17, "bold")).pack(
+            anchor="w", padx=20, pady=(14, 10)
         )
 
         table_frame = tk.Frame(panel, bg=INPUT_BG, highlightbackground=BORDER, highlightthickness=1)
@@ -368,7 +368,7 @@ class LauncherApp(tk.Tk):
             style="BIMobile.Treeview",
         )
         self.tree.heading("descricao", text="Descrição")
-        self.tree.column("descricao", width=820, anchor="w", stretch=True)
+        self.tree.column("descricao", width=760, anchor="w", stretch=True)
         self.tree.pack(fill="both", expand=True, padx=(0, 0), pady=(0, 0))
         self.tree.bind("<<TreeviewSelect>>", self._on_tree_select)
         self.tree.bind("<Double-1>", lambda _event: self.edit_selected())
@@ -384,13 +384,13 @@ class LauncherApp(tk.Tk):
 
         actions = tk.Frame(wrapper, bg=CARD)
         actions.pack(fill="x", pady=(0, 16))
-        self._rounded_button(actions, "＋  Nova", self.new_base, bg=ACCENT, font=("Segoe UI", 18, "normal"), padx=22, pady=16).pack(
+        self._rounded_button(actions, "＋  Nova", self.new_base, bg=ACCENT, font=("Segoe UI", 17, "normal"), padx=18, pady=14).pack(
             side="left", fill="x", expand=True, padx=(0, 14)
         )
-        self._rounded_button(actions, "✎  Editar", self.edit_selected, bg=ACCENT_STRONG, font=("Segoe UI", 18, "normal"), padx=22, pady=16).pack(
+        self._rounded_button(actions, "✎  Editar", self.edit_selected, bg=ACCENT_STRONG, font=("Segoe UI", 17, "normal"), padx=18, pady=14).pack(
             side="left", fill="x", expand=True, padx=(0, 14)
         )
-        self._rounded_button(actions, "🗑  Excluir", self.delete_selected, bg=DANGER, font=("Segoe UI", 18, "normal"), padx=22, pady=16).pack(
+        self._rounded_button(actions, "🗑  Excluir", self.delete_selected, bg=DANGER, font=("Segoe UI", 17, "normal"), padx=18, pady=14).pack(
             side="left", fill="x", expand=True
         )
 
@@ -406,7 +406,7 @@ class LauncherApp(tk.Tk):
             activebackground=CARD,
             activeforeground=TEXT,
             selectcolor=CARD,
-            font=("Segoe UI", 14, "normal"),
+            font=("Segoe UI", 13, "normal"),
             bd=0,
             highlightthickness=0,
         ).pack(anchor="w", pady=(4, 0))
@@ -439,22 +439,22 @@ class LauncherApp(tk.Tk):
         self.apelido_entry = self._entry(
             form,
             self.apelido_var,
-            font=("Segoe UI", 17, "normal"),
+            font=("Segoe UI", 15, "normal"),
         )
-        self.apelido_entry.pack(fill="x", pady=(8, 18), ipady=7)
+        self.apelido_entry.pack(fill="x", pady=(8, 16), ipady=6)
 
-        self._section_title(form, "Conexão").pack(fill="x", pady=(0, 10))
+        self._section_title(form, "Conexão").pack(fill="x", pady=(0, 8))
 
         path_row = tk.Frame(form, bg=PANEL)
         path_row.pack(fill="x", pady=(2, 14))
-        tk.Label(path_row, text="Caminho da base de dados no servidor:", bg=PANEL, fg=TEXT, font=("Segoe UI", 14, "normal")).pack(
+        tk.Label(path_row, text="Caminho da base de dados no servidor:", bg=PANEL, fg=TEXT, font=("Segoe UI", 13, "normal")).pack(
             anchor="w", pady=(0, 6)
         )
         path_inner = tk.Frame(path_row, bg=PANEL)
         path_inner.pack(fill="x")
-        self.caminho_entry = self._entry(path_inner, self.caminho_base_var, font=("Segoe UI", 15, "normal"))
-        self.caminho_entry.pack(side="left", fill="x", expand=True, ipady=7)
-        self._rounded_button(path_inner, "📁", self._browse_base_path, bg=NEUTRAL_ALT, font=("Segoe UI Symbol", 18, "normal"), padx=16, pady=8).pack(
+        self.caminho_entry = self._entry(path_inner, self.caminho_base_var, font=("Segoe UI", 14, "normal"))
+        self.caminho_entry.pack(side="left", fill="x", expand=True, ipady=6)
+        self._rounded_button(path_inner, "📁", self._browse_base_path, bg=NEUTRAL_ALT, font=("Segoe UI Symbol", 16, "normal"), padx=14, pady=8).pack(
             side="left", padx=(12, 0)
         )
 
@@ -475,12 +475,12 @@ class LauncherApp(tk.Tk):
         right = tk.Frame(row_3, bg=PANEL)
         right.pack(side="left", fill="x", expand=True)
         password_box = tk.Frame(right, bg=PANEL)
-        tk.Label(password_box, text="Senha Firebird:", bg=PANEL, fg=TEXT, font=("Segoe UI", 14, "normal")).pack(anchor="w", pady=(0, 6))
+        tk.Label(password_box, text="Senha Firebird:", bg=PANEL, fg=TEXT, font=("Segoe UI", 13, "normal")).pack(anchor="w", pady=(0, 6))
         pass_row = tk.Frame(password_box, bg=PANEL)
         pass_row.pack(fill="x")
-        self.password_entry = self._entry(pass_row, self.senha_var, show="•", font=("Segoe UI", 15, "normal"))
-        self.password_entry.pack(side="left", fill="x", expand=True, ipady=7)
-        self._rounded_button(pass_row, "👁", self._toggle_password, bg=NEUTRAL_ALT, font=("Segoe UI Symbol", 16, "normal"), padx=14, pady=8).pack(
+        self.password_entry = self._entry(pass_row, self.senha_var, show="•", font=("Segoe UI", 14, "normal"))
+        self.password_entry.pack(side="left", fill="x", expand=True, ipady=6)
+        self._rounded_button(pass_row, "👁", self._toggle_password, bg=NEUTRAL_ALT, font=("Segoe UI Symbol", 15, "normal"), padx=12, pady=8).pack(
             side="left", padx=(12, 0)
         )
         password_box.pack(fill="x")
@@ -495,9 +495,9 @@ class LauncherApp(tk.Tk):
             self.test_form_connection,
             bg=SUCCESS,
             fg="#e8fff0",
-            font=("Segoe UI", 17, "normal"),
-            padx=18,
-            pady=16,
+            font=("Segoe UI", 16, "normal"),
+            padx=16,
+            pady=14,
         ).pack(anchor="w")
 
         protocol_box = self._panel_card(row_4, bg=PANEL)
@@ -517,7 +517,7 @@ class LauncherApp(tk.Tk):
             activebackground=PANEL,
             activeforeground=TEXT,
             selectcolor=PANEL,
-            font=("Segoe UI", 13, "normal"),
+            font=("Segoe UI", 12, "normal"),
             bd=0,
             highlightthickness=0,
         ).pack(side="left", padx=(0, 20))
@@ -531,7 +531,7 @@ class LauncherApp(tk.Tk):
             activebackground=PANEL,
             activeforeground=TEXT,
             selectcolor=PANEL,
-            font=("Segoe UI", 13, "normal"),
+            font=("Segoe UI", 12, "normal"),
             bd=0,
             highlightthickness=0,
         ).pack(side="left")
@@ -549,7 +549,7 @@ class LauncherApp(tk.Tk):
             activebackground=PANEL,
             activeforeground=TEXT,
             selectcolor=PANEL,
-            font=("Segoe UI", 14, "normal"),
+            font=("Segoe UI", 12, "normal"),
             bd=0,
             highlightthickness=0,
         ).pack(anchor="w", pady=(0, 8))
@@ -562,7 +562,7 @@ class LauncherApp(tk.Tk):
             activebackground=PANEL,
             activeforeground=TEXT,
             selectcolor=PANEL,
-            font=("Segoe UI", 14, "normal"),
+            font=("Segoe UI", 12, "normal"),
             bd=0,
             highlightthickness=0,
         ).pack(anchor="w")
@@ -570,9 +570,9 @@ class LauncherApp(tk.Tk):
         porta_box = tk.Frame(row_5, bg=PANEL, width=160)
         porta_box.pack(side="left", padx=(0, 24))
         porta_box.pack_propagate(False)
-        tk.Label(porta_box, text="Porta:", bg=PANEL, fg=TEXT, font=("Segoe UI", 14, "normal")).pack(anchor="w", pady=(0, 6))
-        self.porta_entry = self._entry(porta_box, self.porta_var, font=("Segoe UI", 15, "normal"))
-        self.porta_entry.pack(fill="x", ipady=7)
+        tk.Label(porta_box, text="Porta:", bg=PANEL, fg=TEXT, font=("Segoe UI", 13, "normal")).pack(anchor="w", pady=(0, 6))
+        self.porta_entry = self._entry(porta_box, self.porta_var, font=("Segoe UI", 14, "normal"))
+        self.porta_entry.pack(fill="x", ipady=6)
 
         base_padrao_box = tk.Frame(row_5, bg=PANEL)
         base_padrao_box.pack(side="left", fill="x", expand=True)
@@ -585,17 +585,17 @@ class LauncherApp(tk.Tk):
             activebackground=PANEL,
             activeforeground=TEXT,
             selectcolor=PANEL,
-            font=("Segoe UI", 14, "normal"),
+            font=("Segoe UI", 12, "normal"),
             bd=0,
             highlightthickness=0,
         ).pack(anchor="w", pady=(36, 0))
 
         bottom = tk.Frame(form, bg=PANEL)
-        bottom.pack(fill="x", pady=(24, 0))
-        self._rounded_button(bottom, "💾  Salvar", self.save_form, bg=ACCENT_STRONG, font=("Segoe UI", 18, "normal"), padx=22, pady=16).pack(
+        bottom.pack(fill="x", pady=(18, 0))
+        self._rounded_button(bottom, "💾  Salvar", self.save_form, bg=ACCENT_STRONG, font=("Segoe UI", 17, "normal"), padx=18, pady=14).pack(
             side="left", padx=(0, 14)
         )
-        self._rounded_button(bottom, "×  Cancelar", self.cancel_form, bg=NEUTRAL_ALT, font=("Segoe UI", 18, "normal"), padx=22, pady=16).pack(side="left")
+        self._rounded_button(bottom, "×  Cancelar", self.cancel_form, bg=NEUTRAL_ALT, font=("Segoe UI", 17, "normal"), padx=18, pady=14).pack(side="left")
 
     def _label_title(self, parent: tk.Widget, text: str) -> tk.Label:
         return tk.Label(parent, text=text, bg=parent["bg"], fg=TEXT, font=("Segoe UI", 17, "bold"))
@@ -624,9 +624,9 @@ class LauncherApp(tk.Tk):
             "✓  Selecionar",
             self.select_base,
             bg=SUCCESS,
-            font=("Segoe UI", 17, "normal"),
-            padx=20,
-            pady=18,
+            font=("Segoe UI", 16, "normal"),
+            padx=18,
+            pady=16,
         ).pack(fill="x", pady=(2, 20))
 
         filler = self._panel_card(box, bg=PANEL_ALT)
@@ -639,9 +639,9 @@ class LauncherApp(tk.Tk):
             "×  Fechar",
             self.close_manager,
             bg=NEUTRAL,
-            font=("Segoe UI", 17, "normal"),
-            padx=20,
-            pady=18,
+            font=("Segoe UI", 16, "normal"),
+            padx=18,
+            pady=16,
         ).pack(fill="x", pady=(0, 18))
 
         spacer = tk.Frame(box, bg=PANEL)
@@ -652,7 +652,7 @@ class LauncherApp(tk.Tk):
             self.refresh_and_reload_list,
             bg=PANEL,
             fg=TEXT,
-            font=("Segoe UI", 16, "normal"),
+            font=("Segoe UI", 15, "normal"),
             padx=14,
             pady=10,
             anchor="w",
@@ -667,9 +667,9 @@ class LauncherApp(tk.Tk):
             "✓  Selecionar",
             self.select_base,
             bg=SUCCESS,
-            font=("Segoe UI", 17, "normal"),
-            padx=20,
-            pady=18,
+            font=("Segoe UI", 16, "normal"),
+            padx=18,
+            pady=16,
         ).pack(fill="x", pady=(2, 20))
 
         self._rounded_button(
@@ -677,9 +677,9 @@ class LauncherApp(tk.Tk):
             "×  Fechar",
             self.close_manager,
             bg=NEUTRAL,
-            font=("Segoe UI", 17, "normal"),
-            padx=20,
-            pady=18,
+            font=("Segoe UI", 16, "normal"),
+            padx=18,
+            pady=16,
         ).pack(fill="x", pady=(0, 18))
 
         filler = tk.Frame(box, bg=PANEL)
