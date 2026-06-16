@@ -4,6 +4,7 @@ import logging
 import platform
 import sys
 import threading
+import struct
 from pathlib import Path
 import tkinter as tk
 from tkinter import BooleanVar, StringVar, filedialog, messagebox, ttk
@@ -12,12 +13,6 @@ try:
     import pystray  # type: ignore
 except Exception:  # pragma: no cover - optional at runtime
     pystray = None
-
-try:
-    from PIL import Image, ImageDraw  # type: ignore
-except Exception:  # pragma: no cover - optional at runtime
-    Image = None
-    ImageDraw = None
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if str(BACKEND_ROOT) not in sys.path:
@@ -75,6 +70,93 @@ def build_fdb_path(caminho_base: str, nome_arquivo: str) -> str:
     if not caminho_base or not nome_arquivo:
         return ""
     return str(Path(caminho_base) / nome_arquivo)
+
+
+def _point_in_ellipse(x: int, y: int, cx: float, cy: float, rx: float, ry: float) -> bool:
+    if rx <= 0 or ry <= 0:
+        return False
+    return ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1.0
+
+
+class _SimpleTrayIconImage:
+    def __init__(self, size: int = 32) -> None:
+        self.size = size
+        self._ico_bytes = self._build_ico_bytes()
+
+    def save(self, fp, format: str | None = None, **_kwargs) -> None:
+        if format is not None and format.upper() != "ICO":
+            raise ValueError("fallback tray icon only supports ICO")
+        fp.write(self._ico_bytes)
+
+    def _build_ico_bytes(self) -> bytes:
+        size = self.size
+        bg = (5, 11, 20, 255)
+        body = (12, 31, 70, 255)
+        fill = (30, 144, 255, 255)
+        outline = (10, 132, 255, 255)
+
+        rows: list[bytes] = []
+        for y in range(size):
+            row = bytearray()
+            for x in range(size):
+                pixel = self._pixel_color(x, y, size, bg, body, fill, outline)
+                row.extend((pixel[2], pixel[1], pixel[0], pixel[3]))
+            rows.append(bytes(row))
+
+        pixel_bytes = b"".join(reversed(rows))
+        mask_row_bytes = ((size + 31) // 32) * 4
+        mask_bytes = b"\x00" * (mask_row_bytes * size)
+        bitmap_header = struct.pack(
+            "<IiiHHIIiiII",
+            40,
+            size,
+            size * 2,
+            1,
+            32,
+            0,
+            len(pixel_bytes) + len(mask_bytes),
+            2835,
+            2835,
+            0,
+            0,
+        )
+        image_bytes = bitmap_header + pixel_bytes + mask_bytes
+        icon_dir = struct.pack("<HHH", 0, 1, 1)
+        icon_entry = struct.pack("<BBBBHHII", size, size, 0, 0, 1, 32, len(image_bytes), 6 + 16)
+        return icon_dir + icon_entry + image_bytes
+
+    def _pixel_color(
+        self,
+        x: int,
+        y: int,
+        size: int,
+        bg: tuple[int, int, int, int],
+        body: tuple[int, int, int, int],
+        fill: tuple[int, int, int, int],
+        outline: tuple[int, int, int, int],
+    ) -> tuple[int, int, int, int]:
+        center = size / 2
+        body_left = int(size * 0.22)
+        body_right = int(size * 0.78)
+        body_top = int(size * 0.28)
+        body_bottom = int(size * 0.80)
+
+        if body_left <= x <= body_right and body_top <= y <= body_bottom:
+            color = body
+        else:
+            color = bg
+
+        ellipses = (
+            (center, size * 0.24, size * 0.30, size * 0.10),
+            (center, size * 0.50, size * 0.30, size * 0.10),
+            (center, size * 0.76, size * 0.30, size * 0.10),
+        )
+        for cx, cy, rx, ry in ellipses:
+            if _point_in_ellipse(x, y, cx, cy, rx, ry):
+                return fill
+            if _point_in_ellipse(x, y, cx, cy, rx * 1.05, ry * 1.15):
+                color = outline
+        return color
 
 
 class LauncherApp(tk.Tk):
@@ -346,68 +428,59 @@ class LauncherApp(tk.Tk):
         self.geometry(f"+{win_x + delta_x}+{win_y + delta_y}")
 
     def _create_tray_image(self):
-        if Image is None:
-            return None
-        image = Image.new("RGBA", (64, 64), (5, 11, 20, 255))
-        draw = ImageDraw.Draw(image)
-        draw.ellipse((10, 8, 54, 22), fill=(30, 144, 255, 255), outline=(10, 132, 255, 255))
-        draw.rectangle((10, 15, 54, 32), fill=(12, 31, 70, 255))
-        draw.ellipse((10, 24, 54, 38), fill=(12, 31, 70, 255))
-        draw.arc((10, 24, 54, 38), start=180, end=360, fill=(10, 132, 255, 255), width=2)
-        draw.ellipse((14, 34, 50, 50), fill=(14, 40, 95, 255), outline=(10, 132, 255, 255))
-        draw.line((34, 27, 40, 39), fill=(10, 132, 255, 255), width=3)
-        draw.line((38, 31, 29, 37), fill=(10, 132, 255, 255), width=3)
-        return image
+        return _SimpleTrayIconImage(size=32)
 
-    def _start_tray_icon(self) -> None:
-        if pystray is None or Image is None or ImageDraw is None:
-            self.logger.info("Tray indisponivel: pystray/pillow ausente")
-            return
+    def _start_tray_icon(self) -> bool:
+        if pystray is None:
+            self.logger.info("Tray indisponivel: pystray ausente")
+            return False
         with self._tray_lock:
             if self._tray_icon is not None:
-                return
+                return True
 
             image = self._create_tray_image()
             if image is None:
-                return
+                self.logger.info("Tray indisponivel: nao foi possivel criar o icone")
+                return False
 
             menu = pystray.Menu(
-                pystray.MenuItem("Abrir", lambda _icon, _item: self.after(0, self.restore_window)),
-                pystray.MenuItem("Fechar", lambda _icon, _item: self.after(0, self.quit_app)),
+                pystray.MenuItem("Abrir", lambda _icon, _item: self.after(0, self.restore_from_tray)),
+                pystray.MenuItem("Fechar", lambda _icon, _item: self.after(0, self.quit_from_tray)),
             )
             self._tray_icon = pystray.Icon("BIMobileAPIManager", image, "BIMobile API Manager", menu)
             self._tray_running.set()
-
-            def run_icon() -> None:
-                try:
-                    self._tray_icon.run()
-                finally:
-                    self._tray_running.clear()
-
-            self._tray_thread = threading.Thread(target=run_icon, daemon=True)
-            self._tray_thread.start()
+            self._tray_icon.run_detached()
+            self._tray_running.clear()
+            return True
 
     def minimize_to_tray(self) -> None:
         if self._closing_requested:
             return
-        self._start_tray_icon()
+        if not self._start_tray_icon():
+            return
         self.withdraw()
-        self.logger.info("Janela enviada para bandeja")
+        self.logger.info("minimize_to_tray")
 
     def restore_window(self) -> None:
+        self.restore_from_tray()
+
+    def restore_from_tray(self) -> None:
         if self._closing_requested:
             return
         self.deiconify()
         self.state("normal")
         self.lift()
         self.focus_force()
-        self.logger.info("Janela restaurada")
+        self.logger.info("restore_from_tray")
 
     def quit_app(self) -> None:
+        self.quit_from_tray()
+
+    def quit_from_tray(self) -> None:
         if self._closing_requested:
             return
         self._closing_requested = True
-        self.logger.info("Aplicativo encerrando")
+        self.logger.info("quit_from_tray")
 
         def worker() -> None:
             stop_api()
@@ -430,6 +503,7 @@ class LauncherApp(tk.Tk):
                 icon.stop()
             except Exception:
                 pass
+        self._tray_running.clear()
 
     def _on_window_close(self) -> None:
         self.minimize_to_tray()
@@ -766,6 +840,16 @@ class LauncherApp(tk.Tk):
             pady=16,
         ).pack(fill="x", pady=(0, 18))
 
+        self._rounded_button(
+            box,
+            "Teste Bandeja",
+            self.minimize_to_tray,
+            bg=ACCENT_STRONG,
+            font=("Segoe UI", 15, "normal"),
+            padx=18,
+            pady=14,
+        ).pack(fill="x", pady=(0, 18))
+
         spacer = tk.Frame(box, bg=PANEL)
         spacer.pack(fill="both", expand=True)
         self._rounded_button(
@@ -802,6 +886,16 @@ class LauncherApp(tk.Tk):
             font=("Segoe UI", 16, "normal"),
             padx=18,
             pady=16,
+        ).pack(fill="x", pady=(0, 18))
+
+        self._rounded_button(
+            box,
+            "Teste Bandeja",
+            self.minimize_to_tray,
+            bg=ACCENT_STRONG,
+            font=("Segoe UI", 15, "normal"),
+            padx=18,
+            pady=14,
         ).pack(fill="x", pady=(0, 18))
 
         filler = tk.Frame(box, bg=PANEL)
