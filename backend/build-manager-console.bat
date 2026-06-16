@@ -27,6 +27,8 @@ python -m PyInstaller ^
   --console ^
   --name "ResultBI BIMobile API Manager" ^
   --collect-all tkinter ^
+  --collect-all pystray ^
+  --collect-all PIL ^
   --add-data "data;data" ^
   --add-data "app;app" ^
   --add-data "%TCL_LIBRARY%;tcl\tcl8.6" ^

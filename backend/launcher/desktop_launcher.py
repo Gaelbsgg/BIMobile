@@ -1,12 +1,23 @@
 from __future__ import annotations
 
-import os
+import logging
 import platform
 import sys
 import threading
 from pathlib import Path
 import tkinter as tk
 from tkinter import BooleanVar, StringVar, filedialog, messagebox, ttk
+
+try:
+    import pystray  # type: ignore
+except Exception:  # pragma: no cover - optional at runtime
+    pystray = None
+
+try:
+    from PIL import Image, ImageDraw  # type: ignore
+except Exception:  # pragma: no cover - optional at runtime
+    Image = None
+    ImageDraw = None
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if str(BACKEND_ROOT) not in sys.path:
@@ -37,6 +48,20 @@ DANGER = "#ff2d3d"
 NEUTRAL = "#1c2436"
 NEUTRAL_ALT = "#243149"
 LINE = "#23344c"
+LOG_DIR = BACKEND_ROOT / "logs"
+LOG_FILE = LOG_DIR / "launcher.log"
+
+
+def _build_logger() -> logging.Logger:
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    logger = logging.getLogger("bimobile.launcher")
+    if not logger.handlers:
+        logger.setLevel(logging.INFO)
+        handler = logging.FileHandler(LOG_FILE, encoding="utf-8")
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+        logger.addHandler(handler)
+        logger.propagate = False
+    return logger
 
 
 def format_port(value: str) -> int:
@@ -56,6 +81,7 @@ class LauncherApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.store = ConfigStore()
+        self.logger = _build_logger()
         self.title("ResultBI - BIMobile API Manager")
         self.configure(bg=BG)
         self.resizable(False, False)
@@ -69,6 +95,13 @@ class LauncherApp(tk.Tk):
         self.selected_base_id: str | None = None
         self._pending_focus_base_id: str | None = None
         self._drag_anchor: tuple[int, int, int, int] | None = None
+        self._tray_icon = None
+        self._tray_thread: threading.Thread | None = None
+        self._tray_lock = threading.Lock()
+        self._tray_running = threading.Event()
+        self._api_started = False
+        self._docs_opened = False
+        self._closing_requested = False
 
         self.select_on_start_var = BooleanVar(value=False)
         self.api_status_var = StringVar(value="Inicializando...")
@@ -76,7 +109,7 @@ class LauncherApp(tk.Tk):
         self._configure_styles()
         self._build_window()
         self._center_window()
-        self.protocol("WM_DELETE_WINDOW", self.close_manager)
+        self.protocol("WM_DELETE_WINDOW", self.minimize_to_tray)
 
         self.after(50, self._refresh_from_store)
         self.after(200, self._start_api_async)
@@ -311,6 +344,95 @@ class LauncherApp(tk.Tk):
         delta_x = event.x_root - start_x
         delta_y = event.y_root - start_y
         self.geometry(f"+{win_x + delta_x}+{win_y + delta_y}")
+
+    def _create_tray_image(self):
+        if Image is None:
+            return None
+        image = Image.new("RGBA", (64, 64), (5, 11, 20, 255))
+        draw = ImageDraw.Draw(image)
+        draw.ellipse((10, 8, 54, 22), fill=(30, 144, 255, 255), outline=(10, 132, 255, 255))
+        draw.rectangle((10, 15, 54, 32), fill=(12, 31, 70, 255))
+        draw.ellipse((10, 24, 54, 38), fill=(12, 31, 70, 255))
+        draw.arc((10, 24, 54, 38), start=180, end=360, fill=(10, 132, 255, 255), width=2)
+        draw.ellipse((14, 34, 50, 50), fill=(14, 40, 95, 255), outline=(10, 132, 255, 255))
+        draw.line((34, 27, 40, 39), fill=(10, 132, 255, 255), width=3)
+        draw.line((38, 31, 29, 37), fill=(10, 132, 255, 255), width=3)
+        return image
+
+    def _start_tray_icon(self) -> None:
+        if pystray is None or Image is None or ImageDraw is None:
+            self.logger.info("Tray indisponivel: pystray/pillow ausente")
+            return
+        with self._tray_lock:
+            if self._tray_icon is not None:
+                return
+
+            image = self._create_tray_image()
+            if image is None:
+                return
+
+            menu = pystray.Menu(
+                pystray.MenuItem("Abrir", lambda _icon, _item: self.after(0, self.restore_window)),
+                pystray.MenuItem("Fechar", lambda _icon, _item: self.after(0, self.quit_app)),
+            )
+            self._tray_icon = pystray.Icon("BIMobileAPIManager", image, "BIMobile API Manager", menu)
+            self._tray_running.set()
+
+            def run_icon() -> None:
+                try:
+                    self._tray_icon.run()
+                finally:
+                    self._tray_running.clear()
+
+            self._tray_thread = threading.Thread(target=run_icon, daemon=True)
+            self._tray_thread.start()
+
+    def minimize_to_tray(self) -> None:
+        if self._closing_requested:
+            return
+        self._start_tray_icon()
+        self.withdraw()
+        self.logger.info("Janela enviada para bandeja")
+
+    def restore_window(self) -> None:
+        if self._closing_requested:
+            return
+        self.deiconify()
+        self.state("normal")
+        self.lift()
+        self.focus_force()
+        self.logger.info("Janela restaurada")
+
+    def quit_app(self) -> None:
+        if self._closing_requested:
+            return
+        self._closing_requested = True
+        self.logger.info("Aplicativo encerrando")
+
+        def worker() -> None:
+            stop_api()
+            self.after(0, self._shutdown_from_worker)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _shutdown_from_worker(self) -> None:
+        self.logger.info("API encerrada")
+        self._stop_tray_icon()
+        self.logger.info("Aplicativo encerrado")
+        self.destroy()
+
+    def _stop_tray_icon(self) -> None:
+        with self._tray_lock:
+            icon = self._tray_icon
+            self._tray_icon = None
+        if icon is not None:
+            try:
+                icon.stop()
+            except Exception:
+                pass
+
+    def _on_window_close(self) -> None:
+        self.minimize_to_tray()
 
     def _refresh_from_store(self) -> None:
         self.refresh_bases()
@@ -637,7 +759,7 @@ class LauncherApp(tk.Tk):
         self._rounded_button(
             box,
             "×  Fechar",
-            self.close_manager,
+            self.minimize_to_tray,
             bg=NEUTRAL,
             font=("Segoe UI", 16, "normal"),
             padx=18,
@@ -675,7 +797,7 @@ class LauncherApp(tk.Tk):
         self._rounded_button(
             box,
             "×  Fechar",
-            self.close_manager,
+            self.minimize_to_tray,
             bg=NEUTRAL,
             font=("Segoe UI", 16, "normal"),
             padx=18,
@@ -891,19 +1013,20 @@ class LauncherApp(tk.Tk):
         def worker() -> None:
             result = start_api()
             if result.get("ok"):
-                self.after(0, open_docs)
+                self.logger.info("API iniciada")
+                self.after(0, self._open_docs_once)
                 self.after(0, lambda: self.api_status_var.set("API pronta e Docs abertos"))
             else:
                 self.after(0, lambda: self.api_status_var.set("Falha ao iniciar API"))
 
         threading.Thread(target=worker, daemon=True).start()
 
-    def close_manager(self) -> None:
-        def worker() -> None:
-            stop_api()
-            self.after(0, self.destroy)
-
-        threading.Thread(target=worker, daemon=True).start()
+    def _open_docs_once(self) -> None:
+        if self._docs_opened:
+            return
+        self._docs_opened = True
+        self.logger.info("Docs aberto")
+        open_docs()
 
 
 def run_api_mode() -> None:
