@@ -52,8 +52,9 @@ mkdir "%RELEASE%\logs" >nul 2>&1
   --distpath "%BACKEND%\dist_manager" ^
   --workpath "%BACKEND%\build_manager" ^
   --specpath "%BACKEND%\build_manager" ^
-  --collect-all tkinter ^
+  --collect-all flet ^
   --collect-all pystray ^
+  --hidden-import flet ^
   --hidden-import firebird.driver ^
   --hidden-import fdb ^
   --add-data "%BACKEND%\data;data" ^

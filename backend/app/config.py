@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     logs_path: str = str(RUNTIME_CONFIG["paths"]["logs"])
     bases_config_path: str = str(RUNTIME_CONFIG["paths"]["bases_config"])
     permissions_config_path: str = str(RUNTIME_CONFIG["paths"]["permissions_config"])
+    store_path: str = str(resolve_runtime_path("../data/local_store.json"))
     firebird_driver: str = "fdb"
     cloudflared_enabled: bool = bool(RUNTIME_CONFIG["cloudflared"]["enabled"])
     cloudflared_exe: str = str(RUNTIME_CONFIG["cloudflared"]["exe"])

@@ -5,6 +5,7 @@ pydantic==2.13.4
 pydantic-settings==2.14.1
 python-dotenv==1.0.1
 python-multipart==0.0.9
+flet
 pystray==0.19.5
 firebird-driver
 fdb
