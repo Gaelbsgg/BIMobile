@@ -21,7 +21,7 @@ if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
 from app.database.firebird import test_connection  # noqa: E402
-from launcher.api_runner import open_docs, start_api, stop_api  # noqa: E402
+from launcher.api_runner import test_health  # noqa: E402
 from launcher.config_store import ConfigStore  # noqa: E402
 
 
@@ -191,12 +191,12 @@ class LauncherApp(tk.Tk):
         self._tray_thread: threading.Thread | None = None
         self._tray_lock = threading.Lock()
         self._tray_running = threading.Event()
-        self._api_started = False
-        self._docs_opened = False
         self._closing_requested = False
 
         self.select_on_start_var = BooleanVar(value=False)
-        self.api_status_var = StringVar(value="Inicializando...")
+        self.api_status_var = StringVar(value="Verificando API...")
+        self.api_status_detail_var = StringVar(value="")
+        self._api_health_job: str | None = None
 
         self._configure_styles()
         self._build_window()
@@ -205,7 +205,7 @@ class LauncherApp(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self.minimize_to_tray)
 
         self.after(50, self._refresh_from_store)
-        self.after(200, self._start_api_async)
+        self.after(250, self._start_health_monitor)
 
     def _scale_int(self, value: int, factor: float | None = None) -> int:
         scale = self._font_scale if factor is None else factor
@@ -598,15 +598,12 @@ class LauncherApp(tk.Tk):
             return
         self._closing_requested = True
         self.logger.info("quit_from_tray")
-
-        def worker() -> None:
-            stop_api()
-            self.after(0, self._shutdown_from_worker)
-
-        threading.Thread(target=worker, daemon=True).start()
-
-    def _shutdown_from_worker(self) -> None:
-        self.logger.info("API encerrada")
+        if self._api_health_job is not None:
+            try:
+                self.after_cancel(self._api_health_job)
+            except Exception:
+                pass
+            self._api_health_job = None
         self._stop_tray_icon()
         self.logger.info("Aplicativo encerrado")
         self.destroy()
@@ -624,6 +621,31 @@ class LauncherApp(tk.Tk):
 
     def _on_window_close(self) -> None:
         self.minimize_to_tray()
+
+    def _start_health_monitor(self) -> None:
+        self._refresh_api_status()
+
+    def _refresh_api_status(self) -> None:
+        if self._closing_requested:
+            return
+        try:
+            result = test_health(timeout=1.0)
+            if result.get("ok"):
+                self.api_status_var.set("API Online")
+                self.api_status_detail_var.set("Pronta para uso")
+            else:
+                self.api_status_var.set("API Offline")
+                self.api_status_detail_var.set(str(result.get("message", "Sem resposta")))
+        except Exception as exc:
+            self.api_status_var.set("API Offline")
+            self.api_status_detail_var.set(str(exc))
+
+        if self._api_health_job is not None:
+            try:
+                self.after_cancel(self._api_health_job)
+            except Exception:
+                pass
+        self._api_health_job = self.after(5000, self._refresh_api_status)
 
     def _refresh_from_store(self) -> None:
         self.refresh_bases()
@@ -942,9 +964,19 @@ class LauncherApp(tk.Tk):
             show=show,
         )
 
+    def _build_status_box(self, parent: tk.Widget) -> tk.Frame:
+        box = self._panel_card(parent, bg=PANEL_ALT)
+        box.pack(fill="x", pady=(0, 10))
+        tk.Label(box, text="API", bg=PANEL_ALT, fg="#8fb4eb", font=("Segoe UI", 9, "bold")).pack(anchor="w", padx=8, pady=(6, 0))
+        tk.Label(box, textvariable=self.api_status_var, bg=PANEL_ALT, fg=TEXT, font=("Segoe UI", 10, "bold")).pack(anchor="w", padx=8, pady=(2, 0))
+        tk.Label(box, textvariable=self.api_status_detail_var, bg=PANEL_ALT, fg=MUTED, font=("Segoe UI", 8, "normal"), wraplength=104).pack(anchor="w", padx=8, pady=(0, 6))
+        return box
+
     def _build_right_panel_list(self) -> None:
         box = tk.Frame(self.right_panel, bg=PANEL)
         box.pack(fill="both", expand=True, padx=10, pady=10)
+
+        self._build_status_box(box)
 
         self._rounded_button(
             box,
@@ -999,6 +1031,8 @@ class LauncherApp(tk.Tk):
     def _build_right_panel_form(self) -> None:
         box = tk.Frame(self.right_panel, bg=PANEL)
         box.pack(fill="both", expand=True, padx=10, pady=10)
+
+        self._build_status_box(box)
 
         self._rounded_button(
             box,
@@ -1236,37 +1270,7 @@ class LauncherApp(tk.Tk):
             return None
         return next((base for base in self.bases if str(base.get("id")) == str(selected_id)), None)
 
-    def _start_api_async(self) -> None:
-        def worker() -> None:
-            result = start_api()
-            if result.get("ok"):
-                self.logger.info("API iniciada")
-                self.after(0, self._open_docs_once)
-                self.after(0, lambda: self.api_status_var.set("API pronta e Docs abertos"))
-            else:
-                self.after(0, lambda: self.api_status_var.set("Falha ao iniciar API"))
-
-        threading.Thread(target=worker, daemon=True).start()
-
-    def _open_docs_once(self) -> None:
-        if self._docs_opened:
-            return
-        self._docs_opened = True
-        self.logger.info("Docs aberto")
-        open_docs()
-
-
-def run_api_mode() -> None:
-    import uvicorn
-    from app.main import app as fastapi_app
-
-    uvicorn.run(fastapi_app, host="0.0.0.0", port=8000, reload=False)
-
-
 def main() -> None:
-    if "--api" in sys.argv:
-        run_api_mode()
-        return
     app = LauncherApp()
     app.mainloop()
 

@@ -9,6 +9,7 @@ if exist ".venv\Scripts\activate.bat" (
 
 taskkill /F /IM "ResultBI BIMobile API Manager.exe" >nul 2>&1
 taskkill /F /IM "ResultBI BIMobile API Manager" >nul 2>&1
+taskkill /F /IM "BIMobileManager.exe" >nul 2>&1
 
 for /f "delims=" %%i in ('python -c "import sys; print(sys.base_prefix)"') do set "PY_ROOT=%%i"
 set "TCL_LIBRARY=%PY_ROOT%\tcl\tcl8.6"
@@ -26,7 +27,7 @@ python -m PyInstaller ^
   --clean ^
   --onefile ^
   --console ^
-  --name "ResultBI BIMobile API Manager" ^
+  --name "BIMobileManager" ^
   --collect-all tkinter ^
   --collect-all pystray ^
   --hidden-import firebird.driver ^
@@ -41,12 +42,15 @@ python -m PyInstaller ^
   launcher\desktop_launcher.py
 
 if not exist release mkdir release
-if not exist release\data mkdir release\data
-if not exist release\logs mkdir release\logs
+if not exist release\BIMobile mkdir release\BIMobile
+if not exist release\BIMobile\bin mkdir release\BIMobile\bin
+if not exist release\BIMobile\data mkdir release\BIMobile\data
+if not exist release\BIMobile\logs mkdir release\BIMobile\logs
 
-copy /y "dist\ResultBI BIMobile API Manager.exe" "release\ResultBI BIMobile API Manager.exe"
-copy /y "data\bases_config.json" "release\data\bases_config.json"
-copy /y "data\permissions_config.json" "release\data\permissions_config.json"
+copy /y "dist\BIMobileManager.exe" "release\BIMobile\bin\BIMobileManager.exe"
+copy /y "data\bases_config.json" "release\BIMobile\data\bases_config.json"
+copy /y "data\permissions_config.json" "release\BIMobile\data\permissions_config.json"
+copy /y "bin\config.json" "release\BIMobile\bin\config.json"
 
-echo Build console concluido em release\ResultBI BIMobile API Manager.exe
+echo Build console concluido em release\BIMobile\bin\BIMobileManager.exe
 endlocal

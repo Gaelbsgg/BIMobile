@@ -6,17 +6,15 @@ import sys
 from pathlib import Path
 from typing import Any
 
-
-def _runtime_root() -> Path:
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).resolve().parent
-    return Path(__file__).resolve().parents[1]
+from app.config import get_settings
+from app.core.runtime_config import resolve_runtime_path, runtime_config_path
 
 
 class ConfigStore:
     def __init__(self, data_dir: str | Path | None = None):
-        self.root_dir = _runtime_root()
-        self.data_dir = Path(data_dir) if data_dir else self.root_dir / "data"
+        settings = get_settings()
+        self.root_dir = runtime_config_path().resolve().parent
+        self.data_dir = Path(data_dir) if data_dir else Path(resolve_runtime_path(settings.data_path))
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.bases_path = self.data_dir / "bases_config.json"
         self.permissions_path = self.data_dir / "permissions_config.json"
