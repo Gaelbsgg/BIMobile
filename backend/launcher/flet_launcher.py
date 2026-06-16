@@ -173,9 +173,9 @@ class BIMobileManagerApp:
         self.page = page
         self.store = ConfigStore()
         self.logger = _build_logger()
-        self._compact_layout = page.window_width < COMPACT_SCREEN_WIDTH or page.window_height < COMPACT_SCREEN_HEIGHT
-        self._font_scale = 0.9 if self._compact_layout else 1.0
-        self._margin_scale = 0.85 if self._compact_layout else 1.0
+        self._compact_layout = False
+        self._font_scale = 1.0
+        self._margin_scale = 1.0
         self._tray_icon = None
         self._tray_lock = threading.Lock()
         self._closing_requested = False
@@ -192,7 +192,12 @@ class BIMobileManagerApp:
         self._confirm_action: Callable[[], None] | None = None
 
         self._setup_page()
+        self._initialize_layout_mode()
         self._build_shell()
+        try:
+            self.page.run_task(self._center_window_async)
+        except Exception:
+            pass
         self.refresh_bases()
         self.render_list_view()
         self._start_health_monitor()
@@ -202,16 +207,12 @@ class BIMobileManagerApp:
         self.page.theme_mode = ft.ThemeMode.DARK
         self.page.bgcolor = BG
         self.page.padding = 0
-        self.page.window_width = WINDOW_WIDTH
-        self.page.window_height = WINDOW_HEIGHT
+        self.page.window.width = WINDOW_WIDTH
+        self.page.window.height = WINDOW_HEIGHT
         self.page.window_min_width = WINDOW_MIN_WIDTH
         self.page.window_min_height = WINDOW_MIN_HEIGHT
         self.page.window_resizable = False
         self.page.window_maximizable = False
-        try:
-            self.page.window_center()
-        except Exception:
-            pass
         try:
             self.page.window.prevent_close = True
         except Exception:
@@ -229,7 +230,12 @@ class BIMobileManagerApp:
         self.left_panel = ft.Container(
             width=220,
             bgcolor=PANEL,
-            border=ft.border.all(1, BORDER),
+            border=ft.border.Border(
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+            ),
             border_radius=20,
             padding=16,
             content=self._build_left_panel_content(),
@@ -238,7 +244,12 @@ class BIMobileManagerApp:
         self.right_host = ft.Container(
             width=130,
             bgcolor=PANEL,
-            border=ft.border.all(1, BORDER),
+            border=ft.border.Border(
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+            ),
             border_radius=20,
             padding=12,
         )
@@ -246,7 +257,7 @@ class BIMobileManagerApp:
         body = ft.Row(
             controls=[
                 self.left_panel,
-                ft.Container(expand=True, padding=ft.padding.only(left=12, right=12), content=self.center_host),
+                ft.Container(expand=True, padding=ft.padding.Padding(left=12, right=12), content=self.center_host),
                 self.right_host,
             ],
             expand=True,
@@ -273,9 +284,14 @@ class BIMobileManagerApp:
         self.top_health_text = ft.Text(self._api_health, size=12, weight=ft.FontWeight.W_600, color=TEXT)
         return ft.Container(
             bgcolor=SURFACE,
-            border=ft.border.all(1, BORDER),
+            border=ft.border.Border(
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+            ),
             border_radius=20,
-            padding=ft.padding.symmetric(horizontal=18, vertical=14),
+            padding=ft.padding.Padding(left=18, top=14, right=18, bottom=14),
             content=ft.Row(
                 controls=[
                     ft.Column(
@@ -289,7 +305,7 @@ class BIMobileManagerApp:
                     ft.Container(
                         bgcolor=SURFACE_2,
                         border_radius=16,
-                        padding=ft.padding.symmetric(horizontal=12, vertical=8),
+                        padding=ft.padding.Padding(left=12, top=8, right=12, bottom=8),
                         content=ft.Row(
                             controls=[
                                 ft.Icon(ft.Icons.DNS_ROUNDED, size=18, color=ACCENT_2),
@@ -311,8 +327,8 @@ class BIMobileManagerApp:
                     height=140,
                     border_radius=28,
                     gradient=ft.LinearGradient(
-                        begin=ft.alignment.top_left,
-                        end=ft.alignment.bottom_right,
+                        begin=ft.alignment.Alignment(-1, -1),
+                        end=ft.alignment.Alignment(1, 1),
                         colors=["#11243e", "#0b1730", "#08101d"],
                     ),
                     padding=16,
@@ -323,7 +339,7 @@ class BIMobileManagerApp:
                                 height=72,
                                 border_radius=20,
                                 bgcolor="#0f2344",
-                                alignment=ft.alignment.center,
+                                alignment=ft.alignment.Alignment(0, 0),
                                 content=ft.Icon(ft.Icons.STORAGE_ROUNDED, size=42, color=ACCENT_2),
                             ),
                             ft.Text("ResultBI", size=20, weight=ft.FontWeight.W_700, color=TEXT),
@@ -348,9 +364,9 @@ class BIMobileManagerApp:
 
     def _sidebar_action(self, label: str, handler: Callable[[ft.ControlEvent], None] | Callable[[], None], icon: Any, color: str) -> ft.Control:
         return ft.Container(
-            margin=ft.margin.only(bottom=8),
-            content=ft.ElevatedButton(
-                text=label,
+            margin=ft.margin.Margin(bottom=8),
+            content=ft.Button(
+                content=label,
                 icon=icon,
                 on_click=handler,
                 width=188,
@@ -359,7 +375,7 @@ class BIMobileManagerApp:
                     bgcolor=color,
                     color=TEXT,
                     shape=ft.RoundedRectangleBorder(radius=12),
-                    padding=ft.padding.symmetric(horizontal=12, vertical=10),
+                    padding=ft.padding.Padding(left=12, top=10, right=12, bottom=10),
                 ),
             ),
         )
@@ -538,7 +554,7 @@ class BIMobileManagerApp:
     def _build_empty_state(self) -> ft.Control:
         return ft.Container(
             expand=True,
-            alignment=ft.alignment.center,
+            alignment=ft.alignment.Alignment(0, 0),
             content=ft.Column(
                 controls=[
                     ft.Icon(ft.Icons.SEARCH_OFF_ROUNDED, size=72, color=ACCENT_2),
@@ -582,14 +598,24 @@ class BIMobileManagerApp:
             heading_row_color=SURFACE_2,
             data_row_min_height=54,
             data_row_max_height=58,
-            border=ft.border.all(1, BORDER),
+            border=ft.border.Border(
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+            ),
             border_radius=16,
             column_spacing=20,
         )
         return ft.Container(
             expand=True,
             border_radius=16,
-            border=ft.border.all(1, BORDER),
+            border=ft.border.Border(
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+            ),
             bgcolor=INPUT_BG,
             padding=8,
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
@@ -622,7 +648,7 @@ class BIMobileManagerApp:
         content = ft.Column(
             controls=[
                 ft.Container(
-                    padding=ft.padding.only(bottom=10),
+                    padding=ft.padding.Padding(bottom=10),
                     content=ft.Row(
                         controls=[
                             ft.Column(
@@ -636,7 +662,7 @@ class BIMobileManagerApp:
                             ft.Container(
                                 bgcolor=SURFACE_2,
                                 border_radius=14,
-                                padding=ft.padding.symmetric(horizontal=10, vertical=8),
+                                padding=ft.padding.Padding(left=10, top=8, right=10, bottom=8),
                                 content=ft.Text(f"{len(self.bases)} base(s)", size=12, color=TEXT),
                             ),
                         ],
@@ -658,7 +684,12 @@ class BIMobileManagerApp:
         self.center_host.content = ft.Container(
             expand=True,
             bgcolor=SURFACE,
-            border=ft.border.all(1, BORDER),
+            border=ft.border.Border(
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+            ),
             border_radius=20,
             padding=16,
             content=content,
@@ -740,7 +771,12 @@ class BIMobileManagerApp:
         self.center_host.content = ft.Container(
             expand=True,
             bgcolor=SURFACE,
-            border=ft.border.all(1, BORDER),
+            border=ft.border.Border(
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+                ft.border.BorderSide(1, BORDER),
+            ),
             border_radius=20,
             padding=16,
             content=body,
@@ -1075,13 +1111,30 @@ class BIMobileManagerApp:
         self._health_thread = threading.Thread(target=worker, daemon=True)
         self._health_thread.start()
 
+    async def _center_window_async(self) -> None:
+        try:
+            await self.page.window.center()
+        except Exception:
+            pass
+
+    def _initialize_layout_mode(self) -> None:
+        try:
+            width = int(getattr(self.page.window, "width", WINDOW_WIDTH) or WINDOW_WIDTH)
+            height = int(getattr(self.page.window, "height", WINDOW_HEIGHT) or WINDOW_HEIGHT)
+        except Exception:
+            width = WINDOW_WIDTH
+            height = WINDOW_HEIGHT
+        self._compact_layout = width < COMPACT_SCREEN_WIDTH or height < COMPACT_SCREEN_HEIGHT
+        self._font_scale = 0.9 if self._compact_layout else 1.0
+        self._margin_scale = 0.85 if self._compact_layout else 1.0
+
 
 def main(page: ft.Page) -> None:
     BIMobileManagerApp(page)
 
 
 def run() -> None:
-    ft.app(target=main)
+    ft.run(main)
 
 
 if __name__ == "__main__":
