@@ -572,7 +572,7 @@ class BIMobileManagerApp:
             rows.append(
                 ft.DataRow(
                     selected=base_id == self.selected_base_id,
-                    on_select_changed=lambda _event, selected_id=base_id: self._select_base(selected_id),
+                    on_select_change=lambda _event, selected_id=base_id: self._select_base(selected_id),
                     cells=[
                         ft.DataCell(ft.Text(str(base.get("descricao") or base.get("apelido") or ""), color=TEXT)),
                         ft.DataCell(ft.Text(str(base.get("servidor") or ""), color=TEXT)),

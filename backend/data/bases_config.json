@@ -1,4 +1,22 @@
 {
-  "bases": [],
+  "bases": [
+    {
+      "id": "base_001",
+      "apelido": "GG",
+      "descricao": "GG",
+      "servidor": "localhost",
+      "porta": 3050,
+      "caminho_base": "D:\\TGA\\Dados",
+      "nome_arquivo": "TGA.FDB",
+      "caminho_fdb": "D:\\TGA\\Dados\\TGA.FDB",
+      "usuario_firebird": "SYSDBA",
+      "senha_firebird": "masterkey",
+      "protocolo": "TCP-IP",
+      "servidor_linux": false,
+      "ativo": true,
+      "base_padrao": false,
+      "token_empresa": ""
+    }
+  ],
   "selecionar_base_ao_iniciar": false
 }
