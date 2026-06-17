@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 import logging
 import os
 import platform
@@ -66,6 +67,81 @@ def _build_logger() -> logging.Logger:
         logger.addHandler(handler)
         logger.propagate = False
     return logger
+
+
+def _extract_url_from_call(args: tuple[Any, ...], kwargs: dict[str, Any]) -> str:
+    for key in ("url", "download_url", "client_url", "source_url", "href"):
+        value = kwargs.get(key)
+        if isinstance(value, str) and value.startswith(("http://", "https://")):
+            return value
+
+    for value in args:
+        if isinstance(value, str) and value.startswith(("http://", "https://")):
+            return value
+        full_url = getattr(value, "full_url", None)
+        if isinstance(full_url, str) and full_url.startswith(("http://", "https://")):
+            return full_url
+        url = getattr(value, "url", None)
+        if isinstance(url, str) and url.startswith(("http://", "https://")):
+            return url
+
+    return ""
+
+
+@contextmanager
+def _trace_flet_client_download(logger: logging.Logger):
+    patches: list[tuple[Any, str, Any]] = []
+
+    def _patch(target: Any, attr: str, label: str) -> None:
+        original = getattr(target, attr, None)
+        if original is None:
+            return
+
+        def wrapped(*args: Any, **kwargs: Any):
+            url = _extract_url_from_call(args, kwargs)
+            if url:
+                logger.info("URL usada por flet_desktop.__download_flet_client via %s: %s", label, url)
+            else:
+                logger.info(
+                    "Chamada a flet_desktop.__download_flet_client via %s sem URL explicita; args=%r kwargs=%r",
+                    label,
+                    args,
+                    kwargs,
+                )
+            return original(*args, **kwargs)
+
+        setattr(target, attr, wrapped)
+        patches.append((target, attr, original))
+
+    try:
+        import urllib.request as urllib_request
+
+        _patch(urllib_request, "urlopen", "urllib.request.urlopen")
+        _patch(urllib_request, "urlretrieve", "urllib.request.urlretrieve")
+    except Exception:
+        pass
+
+    try:
+        import requests.sessions as requests_sessions  # type: ignore
+
+        _patch(requests_sessions.Session, "request", "requests.sessions.Session.request")
+    except Exception:
+        pass
+
+    try:
+        import httpx  # type: ignore
+
+        _patch(httpx.Client, "request", "httpx.Client.request")
+        _patch(httpx, "get", "httpx.get")
+        _patch(httpx, "post", "httpx.post")
+    except Exception:
+        pass
+
+    try:
+        yield
+    finally:
+        for target, attr, original in reversed(patches):
+            setattr(target, attr, original)
 
 
 def format_port(value: str) -> int:
@@ -1134,7 +1210,39 @@ def main(page: ft.Page) -> None:
 
 
 def run() -> None:
-    ft.run(main)
+    logger = _build_logger()
+    try:
+        import flet.flet_desktop as flet_desktop  # type: ignore
+    except Exception as exc:
+        logger.info("Nao foi possivel importar flet.flet_desktop para rastrear download: %s", exc)
+        ft.run(main)
+        return
+
+    original_download = getattr(flet_desktop, "__download_flet_client", None)
+    if original_download is None:
+        logger.info("flet_desktop.__download_flet_client nao encontrado; executando ft.run(main) sem rastreamento")
+        ft.run(main)
+        return
+
+    def traced_download(*args: Any, **kwargs: Any):
+        url = _extract_url_from_call(args, kwargs)
+        if url:
+            logger.info("flet_desktop.__download_flet_client recebeu URL: %s", url)
+        else:
+            logger.info(
+                "flet_desktop.__download_flet_client chamado sem URL explicita; args=%r kwargs=%r",
+                args,
+                kwargs,
+            )
+        with _trace_flet_client_download(logger):
+            return original_download(*args, **kwargs)
+
+    setattr(flet_desktop, "__download_flet_client", traced_download)
+    try:
+        logger.info("Iniciando ft.run(main) com rastreamento do download do client do Flet")
+        ft.run(main)
+    finally:
+        setattr(flet_desktop, "__download_flet_client", original_download)
 
 
 if __name__ == "__main__":
